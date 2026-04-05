@@ -27,12 +27,15 @@ export default function Topbar() {
       setWaPhone(u?.wa_phone || null);
       try {
         const res = await base44.functions.invoke("getWAStatus", {});
-        setWaStatus(res.data?.connected ? "connected" : "disconnected");
-        if (res.data?.phone) {
-          setWaPhone(res.data.phone);
-          if (!u?.wa_phone) {
-            await base44.auth.updateMe({ wa_phone: res.data.phone, wa_connected_at: res.data.connectedAt });
+        if (res.data?.connected) {
+          setWaStatus("connected");
+          if (res.data?.phone) {
+            setWaPhone(res.data.phone);
           }
+        } else if (res.data?.status === "server_unavailable") {
+          setWaStatus("error");
+        } else {
+          setWaStatus("disconnected");
         }
       } catch (e) {
         setWaStatus("error");

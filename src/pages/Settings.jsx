@@ -119,6 +119,7 @@ export default function Settings() {
     await base44.auth.updateMe({
       business_name: profile.business_name,
       phone: profile.phone,
+      wa_phone: profile.wa_phone || "",
     });
     toast({ title: "הפרופיל עודכן בהצלחה" });
   };

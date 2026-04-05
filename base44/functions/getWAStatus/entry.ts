@@ -34,7 +34,14 @@ Deno.serve(async (req) => {
         signal: AbortSignal.timeout(8000),
       }).catch(() => null);
 
-      const createData = createRes?.ok ? await createRes.json().catch(() => null) : null;
+      if (!createRes || !createRes.ok) {
+        return Response.json({
+          sessionId, connected: false, status: "server_unavailable",
+          qr: null, phone: null, connectedAt: null,
+        });
+      }
+
+      const createData = await createRes.json().catch(() => null);
 
       return Response.json({
         sessionId,
