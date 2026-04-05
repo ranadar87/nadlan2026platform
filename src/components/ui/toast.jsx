@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const ToastProvider = React.forwardRef(({ ...props }, ref) => (
   <div
     ref={ref}
-    className="fixed inset-0 z-[100] pointer-events-none flex flex-col items-end justify-end p-4"
+    className=""
     {...props}
   />
 ));
@@ -15,14 +15,14 @@ ToastProvider.displayName = "ToastProvider";
 const ToastViewport = React.forwardRef(({ ...props }, ref) => (
   <div
     ref={ref}
-    className="fixed bottom-0 left-4 z-[100] flex flex-col gap-3 w-96 max-h-screen pointer-events-auto"
+    className="fixed bottom-4 left-4 z-[100] flex flex-col gap-3 w-80 max-h-[calc(100vh-32px)] pointer-events-auto overflow-y-auto"
     {...props}
   />
 ));
 ToastViewport.displayName = "ToastViewport";
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-lg border border-border bg-card text-foreground p-4 shadow-card transition-all duration-200 animate-in fade-in slide-in-from-left-96 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-left-96",
+  "group pointer-events-auto relative flex w-full items-start justify-between gap-2 overflow-hidden rounded-lg border border-border bg-card text-foreground p-4 shadow-card transition-all duration-200 animate-in fade-in slide-in-from-left data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:slide-out-to-left",
   {
     variants: {
       variant: {
@@ -39,12 +39,7 @@ const toastVariants = cva(
 
 const slideInLeftAnimation = `@keyframes slideInLeft { from { transform: translateX(-400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-400px); opacity: 0; } }`;
 
-if (typeof document !== 'undefined' && !document.getElementById('toast-animations')) {
-  const style = document.createElement('style');
-  style.id = 'toast-animations';
-  style.textContent = slideInLeftAnimation;
-  document.head.appendChild(style);
-}
+
 
 const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
   return (
