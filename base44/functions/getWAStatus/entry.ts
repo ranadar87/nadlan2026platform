@@ -11,21 +11,31 @@ Deno.serve(async (req) => {
     const railwaySecret = Deno.env.get("RAILWAY_API_SECRET");
     const sessionId = `user_${user.id}`;
 
+    // Helper to safely parse JSON
+    const safeJson = async (res) => {
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return null; }
+    };
+
     const statusRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
       headers: { Authorization: `Bearer ${railwaySecret}` },
     });
 
     if (statusRes.ok) {
-      const statusData = await statusRes.json();
-      return Response.json({
-        sessionId,
-        connected: statusData.status === "connected",
-        status: statusData.status,
-        qr: statusData.qr || null,
-      });
+      const statusData = await safeJson(statusRes);
+      if (statusData) {
+        return Response.json({
+          sessionId,
+          connected: statusData.status === "connected",
+          status: statusData.status,
+          qr: statusData.qr || null,
+        });
+      }
+      // Railway returned HTML — server not ready
+      return Response.json({ connected: false, status: "server_unavailable", qr: null });
     }
 
-    // אין session — צור חדש
+    // Session not found — try to create one
     const createRes = await fetch(`${railwayUrl}/session/create`, {
       method: "POST",
       headers: {
@@ -35,7 +45,11 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ sessionId }),
     });
 
-    const createData = await createRes.json();
+    const createData = await safeJson(createRes);
+    if (!createData) {
+      return Response.json({ connected: false, status: "server_unavailable", qr: null });
+    }
+
     return Response.json({
       sessionId,
       connected: false,

@@ -32,19 +32,27 @@ export default function Settings() {
 
   const checkWAStatus = async () => {
     setWaLoading(true);
-    const res = await base44.functions.invoke("getWAStatus", {});
-    const data = res.data;
-    setWaLoading(false);
-    if (data.connected) {
-      setWaStatus("connected");
-      setQrCode(null);
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    } else if (data.qr) {
-      setWaStatus("pending_qr");
-      setQrCode(data.qr);
-      startPolling();
-    } else {
-      setWaStatus("disconnected");
+    try {
+      const res = await base44.functions.invoke("getWAStatus", {});
+      const data = res.data;
+      setWaLoading(false);
+      if (data.status === "server_unavailable") {
+        setWaStatus("server_unavailable");
+        setQrCode(null);
+      } else if (data.connected) {
+        setWaStatus("connected");
+        setQrCode(null);
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      } else if (data.qr) {
+        setWaStatus("pending_qr");
+        setQrCode(data.qr);
+        startPolling();
+      } else {
+        setWaStatus("disconnected");
+      }
+    } catch (e) {
+      setWaLoading(false);
+      setWaStatus("server_unavailable");
     }
   };
 
@@ -117,6 +125,12 @@ export default function Settings() {
               <div className="flex items-center gap-2 bg-destructive/10 text-destructive text-xs font-bold px-3 py-1.5 rounded-full">
                 <XCircle className="w-3.5 h-3.5" />
                 לא מחובר
+              </div>
+            )}
+            {waStatus === "server_unavailable" && (
+              <div className="flex items-center gap-2 bg-warning/10 text-warning text-xs font-bold px-3 py-1.5 rounded-full">
+                <XCircle className="w-3.5 h-3.5" />
+                שרת לא זמין
               </div>
             )}
           </div>
