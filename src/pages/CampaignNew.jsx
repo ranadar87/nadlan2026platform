@@ -60,17 +60,27 @@ export default function CampaignNew() {
         toast({ title: "⏳ מתחיל שליחה...", description: "מעביר לשרת WhatsApp" });
         try {
           const result = await base44.functions.invoke("sendWABulk", { campaignId: newCampaign.id });
-          toast({ title: "✅ הקמפיין הושק!", description: `${result.queued || 0} מ${result.total || campaign.target_lead_ids.length} הודעות נשלחו` });
+          const queued = result.data?.queued || result.queued || 0;
+          const total = result.data?.total || result.total || campaign.target_lead_ids.length;
+          const failed = total - queued;
+          if (failed === 0) {
+            toast({ title: "✅ הקמפיין הושק!", description: `${queued} הודעות נשלחו בהצלחה!` });
+          } else if (queued > 0) {
+            toast({ title: "⚠️ שליחה חלקית", description: `${queued} הודעות שלחו, ${failed} פשלו` });
+          } else {
+            toast({ title: "❌ שגיאה בשליחה", description: `בדוק את הלוגים שרוצים מתוך הקמפיין`, variant: "destructive" });
+          }
         } catch (sendError) {
           console.error("sendWABulk error:", sendError);
-          toast({ title: "⚠️ קמפיין פעיל אך שגיאה בשליחה", description: sendError.message || "spellbinding בשרת WhatsApp", variant: "destructive" });
+          toast({ title: "⚠️ קמפיין זמין אך שגיאה בשליחה", description: sendError.message || "שגיאה פנימית בשרת", variant: "destructive" });
         }
       } else {
         toast({ title: "✅ הקמפיין נוצר!", description: campaign.start_immediately ? "מתחיל כעת" : "מתוזמן לשליחה" });
       }
-      navigate("/campaigns");
+      setTimeout(() => navigate("/campaigns"), 1500);
     } catch (e) {
-      toast({ title: "שגיאה", description: e.message, variant: "destructive" });
+      console.error("Campaign creation error:", e);
+      toast({ title: "שגיאה", description: e.message || "היח שגיאה ביציראת הקמפיין", variant: "destructive" });
     }
     setSaving(false);
   };

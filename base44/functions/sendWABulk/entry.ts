@@ -169,43 +169,61 @@ Deno.serve(async (req) => {
         }),
       });
 
-      if (!sendRes.ok) {
-        const errData = await sendRes.json().catch(() => ({}));
-        const errorMsg = "כישלון שליחה ל-" + lead.phone;
-        addLog("WARN", "SEND_FAILED", errorMsg, { phone: lead.phone, httpStatus: sendRes.status, errorData: errData });
+      let sendData;
+      try {
+        sendData = await sendRes.json();
+      } catch (parseErr) {
+        addLog("ERROR", "RESPONSE_PARSE_ERROR", "שגיאה בקריאת JSON", { phone: lead.phone, httpStatus: sendRes.status, parseError: parseErr.message }, "failed");
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
           status: "failed",
-          error_message: errData.error || ("HTTP " + sendRes.status),
+          error_message: "שגיאה בעיבוד תשובה מServer",
         });
         messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
         continue;
       }
-      const sendData = await sendRes.json();
-      messages.push({ leadId: lead.id, messageId: msg.id, queued: sendData.queued });
-      addLog("DEBUG", "SEND_QUEUED", "הודעה הוקעה", { phone: lead.phone, queued: sendData.queued, variation: variation.label });
+
+      if (!sendRes.ok) {
+        const errorMsg = "כישלון שליחה ל-" + lead.phone;
+        addLog("WARN", "SEND_FAILED", errorMsg, { phone: lead.phone, httpStatus: sendRes.status, responseBody: sendData });
+        await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
+          status: "failed",
+          error_message: sendData.error || ("HTTP " + sendRes.status),
+        });
+        messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
+        continue;
+      }
+
+      const queued = sendData && sendData.queued === true;
+      messages.push({ leadId: lead.id, messageId: msg.id, queued });
+      addLog("DEBUG", "SEND_QUEUED", "הודעה הוקעה", { phone: lead.phone, queued, variation: variation.label });
     }
 
     const successCount = messages.filter(m => m.queued).length;
-    const finalStatus = successCount === messages.length ? "success" : successCount > 0 ? "partial" : "failed";
-    addLog("INFO", "BATCH_COMPLETE", "סיום שליחה", { queued: successCount, total: messages.length }, finalStatus);
+    const failedCount = messages.filter(m => !m.queued).length;
+    const finalStatus = failedCount === 0 ? "success" : successCount > 0 ? "partial" : "failed";
+    addLog("INFO", "BATCH_COMPLETE", "סיום שליחה", { queued: successCount, failed: failedCount, total: messages.length }, finalStatus);
     
     // שמור את כל ה-logs
     try {
       for (const log of logEntries) {
-        await base44.asServiceRole.entities.CampaignLog.create({
-          campaign_id: campaignId,
-          level: log.level,
-          event: log.event,
-          message: log.message,
-          details: log.details,
-          status: log.status,
-          duration_ms: log.duration_ms,
-          source_function: "sendWABulk",
-          user_id: user.id,
-        }).catch(logErr => console.error("Log save failed:", logErr));
+        try {
+          await base44.asServiceRole.entities.CampaignLog.create({
+            campaign_id: campaignId,
+            level: log.level,
+            event: log.event,
+            message: log.message,
+            details: log.details,
+            status: log.status,
+            duration_ms: log.duration_ms,
+            source_function: "sendWABulk",
+            user_id: user.id,
+          });
+        } catch (logErr) {
+          console.error("Log save failed for event", log.event, ":", logErr.message);
+        }
       }
     } catch (logSaveErr) {
-      console.error("Failed to save logs:", logSaveErr);
+      console.error("Failed to save logs batch:", logSaveErr.message);
     }
     
     return Response.json({ ok: true, campaignId, queued: successCount, total: messages.length, messages });
