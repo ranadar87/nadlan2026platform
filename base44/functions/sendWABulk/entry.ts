@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     }
 
     const leadIds = campaign.target_lead_ids || [];
-    const variations = campaign.message_variations || [];
+    const variations = (campaign.message_variations || []).filter(v => v.content && v.content.trim());
     if (!leadIds.length || !variations.length) {
       return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
     }
@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
           sessionId,
           to: lead.phone,
           message: content,
+          mediaUrl: variation.media_url || campaign.global_media_url || null,
           messageId: msg.id,
           webhookUrl,
           delayMin: campaign.delay_min_seconds || 30,
@@ -88,11 +89,22 @@ Deno.serve(async (req) => {
         }),
       });
 
+      if (!sendRes.ok) {
+        const errData = await sendRes.json().catch(() => ({}));
+        console.error(`Failed to queue message for ${lead.phone}:`, errData);
+        await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
+          status: "failed",
+          error_message: errData.error || `HTTP ${sendRes.status}`,
+        });
+        messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
+        continue;
+      }
       const sendData = await sendRes.json();
       messages.push({ leadId: lead.id, messageId: msg.id, queued: sendData.queued });
     }
 
-    return Response.json({ ok: true, campaignId, queued: messages.length, messages });
+    const successCount = messages.filter(m => m.queued).length;
+    return Response.json({ ok: true, campaignId, queued: successCount, total: messages.length, messages });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
