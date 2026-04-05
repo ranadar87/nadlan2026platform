@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { campaignId } = await req.json();
+    const { campaignId, processPending } = await req.json();
     if (!campaignId) return Response.json({ error: 'campaignId נדרש' }, { status: 400 });
 
     const rawUrl = (Deno.env.get("RAILWAY_URL") || "").replace(/\/$/, "");
@@ -36,9 +36,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'WhatsApp לא מחובר — אנא סרוק QR' }, { status: 400 });
     }
 
-    const leadIds = campaign.target_lead_ids || [];
+    // אם processPending, שלח רק pending messages - אחרת שלח את כל הlead IDs
+    let leadsToSend = [];
+    if (processPending) {
+      const pendingMsgs = await base44.asServiceRole.entities.CampaignMessage.filter({
+        campaign_id: campaignId,
+        status: "pending",
+      });
+      const pendingLeadIds = [...new Set(pendingMsgs.map(m => m.lead_id))];
+      const fetchedLeads = await Promise.all(
+        pendingLeadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
+      );
+      leadsToSend = fetchedLeads.filter(l => l && l.phone);
+    } else {
+      // מצב ישן - שלח את כל ה-target leads
+      const leadIds = campaign.target_lead_ids || [];
+      const fetchedLeads = await Promise.all(
+        leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
+      );
+      leadsToSend = fetchedLeads.filter(l => l && l.phone);
+    }
+
     const variations = (campaign.message_variations || []).filter(v => v.content && v.content.trim());
-    if (!leadIds.length || !variations.length) {
+    if (!leadsToSend.length || !variations.length) {
       return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
     }
 
@@ -53,20 +73,43 @@ Deno.serve(async (req) => {
     });
 
     const messages = [];
-    for (let i = 0; i < validLeads.length; i++) {
-      const lead = validLeads[i];
+    for (let i = 0; i < leadsToSend.length; i++) {
+      const lead = leadsToSend[i];
       const variation = variations[i % variations.length];
       const content = (variation.content || "").replace("{name}", lead.full_name || "");
 
-      const msg = await base44.asServiceRole.entities.CampaignMessage.create({
-        campaign_id: campaignId,
-        lead_id: lead.id,
-        lead_name: lead.full_name,
-        lead_phone: lead.phone,
-        variation_used: variation.label || "A",
-        message_content: content,
-        status: "pending",
-      });
+      // אם processPending, חפש אם already יש pending message לlead הזה
+      let msg;
+      if (processPending) {
+        const existing = await base44.asServiceRole.entities.CampaignMessage.filter({
+          campaign_id: campaignId,
+          lead_id: lead.id,
+          status: "pending",
+        }).then(r => r[0]).catch(() => null);
+        if (existing) {
+          msg = existing;
+        } else {
+          msg = await base44.asServiceRole.entities.CampaignMessage.create({
+            campaign_id: campaignId,
+            lead_id: lead.id,
+            lead_name: lead.full_name,
+            lead_phone: lead.phone,
+            variation_used: variation.label || "A",
+            message_content: content,
+            status: "pending",
+          });
+        }
+      } else {
+        msg = await base44.asServiceRole.entities.CampaignMessage.create({
+          campaign_id: campaignId,
+          lead_id: lead.id,
+          lead_name: lead.full_name,
+          lead_phone: lead.phone,
+          variation_used: variation.label || "A",
+          message_content: content,
+          status: "pending",
+        });
+      }
 
       const sendRes = await fetch(`${railwayUrl}/message/send`, {
         method: "POST",
