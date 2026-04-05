@@ -11,8 +11,45 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
     const body = await req.json();
-    const { messageId, status, timestamp, error } = body;
+    const { event, sessionId, messageId, status, timestamp, error, data } = body;
 
+    // Handle session_connected event
+    if (event === 'session_connected') {
+      const userId = sessionId?.replace('user_', '');
+      if (!userId) return Response.json({ error: 'Invalid sessionId' }, { status: 400 });
+      await base44.asServiceRole.entities.User.update(userId, {
+        whatsapp_connected: true,
+        whatsapp_phone: data?.phone || null,
+        whatsapp_manually_disconnected: false,
+        whatsapp_connected_at: new Date().toISOString(),
+      });
+      return Response.json({ ok: true, event: 'session_connected', userId });
+    }
+
+    // Handle session_disconnected event
+    if (event === 'session_disconnected') {
+      const userId = sessionId?.replace('user_', '');
+      if (!userId) return Response.json({ error: 'Invalid sessionId' }, { status: 400 });
+      await base44.asServiceRole.entities.User.update(userId, {
+        whatsapp_connected: false,
+        whatsapp_phone: null,
+      });
+      return Response.json({ ok: true, event: 'session_disconnected', userId });
+    }
+
+    // Handle qr_updated event
+    if (event === 'qr_updated') {
+      const userId = sessionId?.replace('user_', '');
+      if (userId && data?.qr) {
+        await base44.asServiceRole.entities.User.update(userId, {
+          whatsapp_qr_cache: data.qr,
+          whatsapp_qr_updated_at: new Date().toISOString(),
+        }).catch(() => null);
+      }
+      return Response.json({ ok: true, event: 'qr_updated', userId });
+    }
+
+    // Handle message status events (existing logic)
     if (!messageId) return Response.json({ error: 'Missing messageId' }, { status: 400 });
 
     const statusMap = {
