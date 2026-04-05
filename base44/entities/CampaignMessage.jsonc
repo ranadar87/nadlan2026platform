@@ -1,0 +1,73 @@
+{
+  "name": "CampaignMessage",
+  "type": "object",
+  "properties": {
+    "campaign_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05e7\u05de\u05e4\u05d9\u05d9\u05df"
+    },
+    "lead_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05dc\u05d9\u05d3"
+    },
+    "lead_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05d4\u05dc\u05d9\u05d3"
+    },
+    "lead_phone": {
+      "type": "string",
+      "title": "\u05d8\u05dc\u05e4\u05d5\u05df \u05d4\u05dc\u05d9\u05d3"
+    },
+    "variation_used": {
+      "type": "string",
+      "title": "\u05d5\u05e8\u05d9\u05d0\u05e6\u05d9\u05d4",
+      "enum": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "message_content": {
+      "type": "string",
+      "title": "\u05ea\u05d5\u05db\u05df \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4"
+    },
+    "status": {
+      "type": "string",
+      "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",
+      "enum": [
+        "pending",
+        "sent",
+        "delivered",
+        "opened",
+        "replied",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "sent_at": {
+      "type": "string",
+      "title": "\u05e0\u05e9\u05dc\u05d7 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+    },
+    "delivered_at": {
+      "type": "string",
+      "title": "\u05e0\u05de\u05e1\u05e8 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+    },
+    "opened_at": {
+      "type": "string",
+      "title": "\u05e0\u05e4\u05ea\u05d7 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+    },
+    "replied_at": {
+      "type": "string",
+      "title": "\u05d4\u05d2\u05d9\u05d1 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+    },
+    "error_message": {
+      "type": "string",
+      "title": "\u05d4\u05d5\u05d3\u05e2\u05ea \u05e9\u05d2\u05d9\u05d0\u05d4"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "lead_id",
+    "status"
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "name": "Campaign",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05d4\u05e7\u05de\u05e4\u05d9\u05d9\u05df"
+    },
+    "type": {
+      "type": "string",
+      "title": "\u05e1\u05d5\u05d2",
+      "enum": [
+        "whatsapp",
+        "sms"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",
+      "enum": [
+        "draft",
+        "scheduled",
+        "running",
+        "paused",
+        "completed",
+        "stopped"
+      ],
+      "default": "draft"
+    },
+    "message_variations": {
+      "type": "array",
+      "title": "\u05d5\u05e8\u05d9\u05d0\u05e6\u05d9\u05d5\u05ea \u05d4\u05d5\u05d3\u05e2\u05d4",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ai_prompt": {
+      "type": "string",
+      "title": "Prompt \u05dc-AI"
+    },
+    "target_lead_ids": {
+      "type": "array",
+      "title": "\u05de\u05d6\u05d4\u05d9 \u05dc\u05d9\u05d3\u05d9\u05dd",
+      "items": {
+        "type": "string"
+      }
+    },
+    "total_recipients": {
+      "type": "number",
+      "title": "\u05e1\u05d4\"\u05db \u05e0\u05de\u05e2\u05e0\u05d9\u05dd"
+    },
+    "sent_count": {
+      "type": "number",
+      "title": "\u05e0\u05e9\u05dc\u05d7\u05d5",
+      "default": 0
+    },
+    "delivered_count": {
+      "type": "number",
+      "title": "\u05e0\u05de\u05e1\u05e8\u05d5",
+      "default": 0
+    },
+    "opened_count": {
+      "type": "number",
+      "title": "\u05e0\u05e4\u05ea\u05d7\u05d5",
+      "default": 0
+    },
+    "replied_count": {
+      "type": "number",
+      "title": "\u05d4\u05d2\u05d9\u05d1\u05d5",
+      "default": 0
+    },
+    "converted_count": {
+      "type": "number",
+      "title": "\u05d4\u05de\u05e8\u05d5\u05ea",
+      "default": 0
+    },
+    "failed_count": {
+      "type": "number",
+      "title": "\u05e0\u05db\u05e9\u05dc\u05d5",
+      "default": 0
+    },
+    "daily_limit": {
+      "type": "number",
+      "title": "\u05de\u05d2\u05d1\u05dc\u05d4 \u05d9\u05d5\u05de\u05d9\u05ea",
+      "default": 80
+    },
+    "delay_min_seconds": {
+      "type": "number",
+      "title": "\u05d4\u05e9\u05d4\u05d9\u05d4 \u05de\u05d9\u05e0\u05d9\u05de\u05dc\u05d9\u05ea",
+      "default": 30
+    },
+    "delay_max_seconds": {
+      "type": "number",
+      "title": "\u05d4\u05e9\u05d4\u05d9\u05d4 \u05de\u05e7\u05e1\u05d9\u05de\u05dc\u05d9\u05ea",
+      "default": 120
+    },
+    "scheduled_date": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05ea\u05d6\u05de\u05d5\u05df"
+    },
+    "scheduled_time_start": {
+      "type": "string",
+      "title": "\u05e9\u05e2\u05ea \u05d4\u05ea\u05d7\u05dc\u05d4"
+    },
+    "scheduled_time_end": {
+      "type": "string",
+      "title": "\u05e9\u05e2\u05ea \u05e1\u05d9\u05d5\u05dd"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "status"
+  ]
+}

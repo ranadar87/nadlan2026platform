@@ -1,0 +1,142 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05de\u05dc\u05d0"
+    },
+    "phone": {
+      "type": "string",
+      "title": "\u05d8\u05dc\u05e4\u05d5\u05df"
+    },
+    "email": {
+      "type": "string",
+      "title": "\u05d0\u05d9\u05de\u05d9\u05d9\u05dc"
+    },
+    "city": {
+      "type": "string",
+      "title": "\u05e2\u05d9\u05e8"
+    },
+    "neighbourhood": {
+      "type": "string",
+      "title": "\u05e9\u05db\u05d5\u05e0\u05d4"
+    },
+    "address": {
+      "type": "string",
+      "title": "\u05db\u05ea\u05d5\u05d1\u05ea"
+    },
+    "property_type": {
+      "type": "string",
+      "title": "\u05e1\u05d5\u05d2 \u05e0\u05db\u05e1"
+    },
+    "deal_type": {
+      "type": "string",
+      "title": "\u05e1\u05d5\u05d2 \u05e2\u05e1\u05e7\u05d4",
+      "enum": [
+        "\u05de\u05db\u05d9\u05e8\u05d4",
+        "\u05d4\u05e9\u05db\u05e8\u05d4"
+      ]
+    },
+    "price": {
+      "type": "number",
+      "title": "\u05de\u05d7\u05d9\u05e8"
+    },
+    "rooms": {
+      "type": "number",
+      "title": "\u05d7\u05d3\u05e8\u05d9\u05dd"
+    },
+    "area_sqm": {
+      "type": "number",
+      "title": "\u05e9\u05d8\u05d7 (\u05de\"\u05e8)"
+    },
+    "floor": {
+      "type": "string",
+      "title": "\u05e7\u05d5\u05de\u05d4"
+    },
+    "source": {
+      "type": "string",
+      "title": "\u05de\u05e7\u05d5\u05e8",
+      "enum": [
+        "yad2",
+        "madlan",
+        "manual"
+      ],
+      "default": "manual"
+    },
+    "source_listing_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05de\u05d5\u05d3\u05e2\u05d4"
+    },
+    "source_url": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 \u05dc\u05de\u05d5\u05d3\u05e2\u05d4"
+    },
+    "status": {
+      "type": "string",
+      "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",
+      "enum": [
+        "new",
+        "contacted",
+        "interested",
+        "not_interested",
+        "deal_closed",
+        "archived"
+      ],
+      "default": "new"
+    },
+    "tags": {
+      "type": "array",
+      "title": "\u05ea\u05d2\u05d9\u05d5\u05ea",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "title": "\u05d4\u05e2\u05e8\u05d5\u05ea"
+    },
+    "has_parking": {
+      "type": "boolean",
+      "title": "\u05d7\u05e0\u05d9\u05d4"
+    },
+    "has_elevator": {
+      "type": "boolean",
+      "title": "\u05de\u05e2\u05dc\u05d9\u05ea"
+    },
+    "has_balcony": {
+      "type": "boolean",
+      "title": "\u05de\u05e8\u05e4\u05e1\u05ea"
+    },
+    "has_secure_room": {
+      "type": "boolean",
+      "title": "\u05de\u05de\"\u05d3"
+    },
+    "has_agent": {
+      "type": "boolean",
+      "title": "\u05d9\u05e9 \u05de\u05ea\u05d5\u05d5\u05da"
+    },
+    "cover_image": {
+      "type": "string",
+      "title": "\u05ea\u05de\u05d5\u05e0\u05d4 \u05e8\u05d0\u05e9\u05d9\u05ea"
+    },
+    "description": {
+      "type": "string",
+      "title": "\u05ea\u05d9\u05d0\u05d5\u05e8"
+    },
+    "scrape_batch_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05d0\u05e6\u05d5\u05d5\u05ea \u05e9\u05d0\u05d9\u05d1\u05d4"
+    },
+    "last_contacted_date": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05e4\u05e0\u05d9\u05d9\u05d4 \u05d0\u05d7\u05e8\u05d5\u05e0\u05d4"
+    }
+  },
+  "required": [
+    "full_name",
+    "phone",
+    "source",
+    "status"
+  ]
+}

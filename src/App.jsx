@@ -5,6 +5,15 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Leads from './pages/Leads';
+import Scrape from './pages/Scrape';
+import Campaigns from './pages/Campaigns';
+import CampaignNew from './pages/CampaignNew';
+import Reports from './pages/Reports';
+import Credits from './pages/Credits';
+import Settings from './pages/Settings';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -33,8 +42,17 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
-      <Route path="*" element={<PageNotFound />} />
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/leads" element={<Leads />} />
+        <Route path="/scrape" element={<Scrape />} />
+        <Route path="/campaigns" element={<Campaigns />} />
+        <Route path="/campaigns/new" element={<CampaignNew />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/credits" element={<Credits />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Route>
     </Routes>
   );
 };
