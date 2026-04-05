@@ -38,6 +38,11 @@ Deno.serve(async (req) => {
     const webhookUrl = appId
       ? `https://api.base44.com/api/apps/${appId}/functions/receiveWebhook`
       : null;
+    
+    if (!webhookUrl) {
+      addLog("ERROR", "WEBHOOK_MISSING", "Webhook URL not available — updates won't be tracked", { appId }, "failed");
+      return Response.json({ error: 'Missing webhook configuration' }, { status: 500 });
+    }
 
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: campaignId });
     if (!campaigns.length) {
@@ -98,7 +103,7 @@ Deno.serve(async (req) => {
       addLog("ERROR", "MISSING_DATA", "חסרים נתונים קריטיים", { leadsCount: leadsToSend.length, variationsCount: variations.length }, "failed");
       return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
     }
-    addLog("INFO", "BATCH_READY", "הכנת batch לשליחה", { leadsCount: leadsToSend.length, variationsCount: variations.length });
+    addLog("INFO", "BATCH_READY", "הכנת batch לשליחה", { leadsCount: leadsToSend.length, variationsCount: variations.length, webhookUrl });
 
     // עדכן סטטוס לrunning
     addLog("DEBUG", "STATUS_UPDATE", "עדכון סטטוס קמפיין ל-running", { totalRecipients: leadsToSend.length });
@@ -160,7 +165,7 @@ Deno.serve(async (req) => {
           message: content,
           mediaUrl: variation.media_url || campaign.global_media_url || null,
           messageId: msg.id,
-          webhookUrl,
+          webhookUrl: webhookUrl,
           delayMin: campaign.delay_min_seconds || 30,
           delayMax: campaign.delay_max_seconds || 120,
           dailyLimit: campaign.daily_limit || 80,

@@ -19,6 +19,12 @@ Deno.serve(async (req) => {
 
     const statusRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
       headers: { Authorization: `Bearer ${railwaySecret}` },
+      signal: AbortSignal.timeout(8000),
+    }).catch(err => {
+      if (err.name === 'AbortError') {
+        return Response.json({ connected: false, status: "timeout", qr: null });
+      }
+      throw err;
     });
 
     if (statusRes.ok) {
@@ -43,8 +49,17 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sessionId }),
+      signal: AbortSignal.timeout(8000),
+    }).catch(err => {
+      if (err.name === 'AbortError') {
+        return { ok: false };
+      }
+      throw err;
     });
 
+    if (!createRes.ok) {
+      return Response.json({ connected: false, status: "server_unavailable", qr: null });
+    }
     const createData = await safeJson(createRes);
     if (!createData) {
       return Response.json({ connected: false, status: "server_unavailable", qr: null });
