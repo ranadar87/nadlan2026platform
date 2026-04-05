@@ -75,22 +75,23 @@ export default function Settings() {
       try {
         const res = await base44.functions.invoke("getWAStatus", {}).catch(() => null);
         if (!res || !res.data) return;
+        console.log("WA Status:", res.data);
         if (res.data.connected) {
           setWaStatus("connected");
           setQrCode(null);
-          if (res.data.phone) {
+          if (res.data?.phone) {
             await base44.auth.updateMe({ wa_phone: res.data.phone });
           }
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
           toast({ title: "✅ WhatsApp חובר בהצלחה!" });
-        } else if (res.data.qr) {
+        } else if (res.data?.qr) {
           setQrCode(res.data.qr);
         }
       } catch (e) {
         console.error("Polling error:", e);
       }
-    }, 3000);
+    }, 1500);
   };
 
   const handleConnect = async () => {
