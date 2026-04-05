@@ -58,8 +58,13 @@ export default function CampaignNew() {
 
       if (campaign.start_immediately && campaign.type === "whatsapp") {
         toast({ title: "⏳ מתחיל שליחה...", description: "מעביר לשרת WhatsApp" });
-        await base44.functions.invoke("sendWABulk", { campaignId: newCampaign.id });
-        toast({ title: "✅ הקמפיין הושק!", description: `${campaign.target_lead_ids.length} הודעות הועברו לשליחה` });
+        try {
+          const result = await base44.functions.invoke("sendWABulk", { campaignId: newCampaign.id });
+          toast({ title: "✅ הקמפיין הושק!", description: `${result.queued || 0} מ${result.total || campaign.target_lead_ids.length} הודעות נשלחו` });
+        } catch (sendError) {
+          console.error("sendWABulk error:", sendError);
+          toast({ title: "⚠️ קמפיין פעיל אך שגיאה בשליחה", description: sendError.message || "spellbinding בשרת WhatsApp", variant: "destructive" });
+        }
       } else {
         toast({ title: "✅ הקמפיין נוצר!", description: campaign.start_immediately ? "מתחיל כעת" : "מתוזמן לשליחה" });
       }
