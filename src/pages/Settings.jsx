@@ -185,11 +185,11 @@ export default function Settings() {
                 <Button variant="destructive" size="sm" className="text-xs" onClick={async () => {
                   setWaLoading(true);
                   await base44.auth.updateMe({ wa_phone: null, wa_connected_at: null });
-                  setWaStatus("disconnected");
                   setWaPhone(null);
                   setWaConnectedAt(null);
+                  await handleConnect();
+                  toast({ title: "✅ התנתקת בהצלחה - מוכן להתחבר שוב" });
                   setWaLoading(false);
-                  toast({ title: "✅ התנתקת בהצלחה" });
                 }} disabled={waLoading}>
                   {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <XCircle className="w-3.5 h-3.5 ml-1" />}
                   התנתק
