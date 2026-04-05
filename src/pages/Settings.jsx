@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Smartphone, CheckCircle, XCircle, RefreshCw, Shield, User, Loader2 } from "lucide-react";
+import { Smartphone, CheckCircle, XCircle, RefreshCw, Shield, User, Loader2, AlertTriangle } from "lucide-react";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -177,10 +177,24 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">{waPhone ? `מספר: ${waPhone}` : "הקמפיינים שלך יישלחו דרך המספר המחובר"}</p>
                 {waConnectedAt && <p className="text-[11px] text-muted-foreground/70 mt-1">עדכון אחרון: {new Date(waConnectedAt).toLocaleString('he-IL')}</p>}
               </div>
-              <Button variant="outline" size="sm" className="text-xs" onClick={checkWAStatus} disabled={waLoading}>
-                {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 ml-1" />}
-                רענן
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="text-xs" onClick={checkWAStatus} disabled={waLoading}>
+                  {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 ml-1" />}
+                  רענן
+                </Button>
+                <Button variant="destructive" size="sm" className="text-xs" onClick={async () => {
+                  setWaLoading(true);
+                  await base44.auth.updateMe({ wa_phone: null, wa_connected_at: null });
+                  setWaStatus("disconnected");
+                  setWaPhone(null);
+                  setWaConnectedAt(null);
+                  setWaLoading(false);
+                  toast({ title: "✅ התנתקת בהצלחה" });
+                }} disabled={waLoading}>
+                  {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <XCircle className="w-3.5 h-3.5 ml-1" />}
+                  התנתק
+                </Button>
+              </div>
             </div>
           </div>
         ) : waStatus === "pending_qr" && qrCode ? (
