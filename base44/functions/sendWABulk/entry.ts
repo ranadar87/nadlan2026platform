@@ -34,14 +34,11 @@ Deno.serve(async (req) => {
     const rawUrl = (Deno.env.get("RAILWAY_URL") || "").replace(/\/$/, "");
     const railwayUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
     const railwaySecret = Deno.env.get("RAILWAY_API_SECRET");
-    const appId = Deno.env.get("BASE44_APP_ID");
-    const webhookUrl = appId
-      ? `https://api.base44.com/api/apps/${appId}/functions/receiveWebhook`
-      : null;
+    const webhookUrl = Deno.env.get("BASE44_WEBHOOK_URL");
     
     if (!webhookUrl) {
-      addLog("ERROR", "WEBHOOK_MISSING", "Webhook URL not available — updates won't be tracked", { appId }, "failed");
-      return Response.json({ error: 'Missing webhook configuration' }, { status: 500 });
+      addLog("ERROR", "WEBHOOK_MISSING", "BASE44_WEBHOOK_URL not set — please add to env vars", {}, "failed");
+      return Response.json({ error: 'Missing BASE44_WEBHOOK_URL env variable' }, { status: 500 });
     }
 
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: campaignId });
@@ -158,6 +155,8 @@ Deno.serve(async (req) => {
         headers: {
           Authorization: `Bearer ${railwaySecret}`,
           "Content-Type": "application/json",
+          "X-Webhook-Url": webhookUrl,
+          "X-Webhook-Secret": railwaySecret,
         },
         body: JSON.stringify({
           sessionId,
@@ -165,7 +164,6 @@ Deno.serve(async (req) => {
           message: content,
           mediaUrl: variation.media_url || campaign.global_media_url || null,
           messageId: msg.id,
-          webhookUrl: webhookUrl,
           delayMin: campaign.delay_min_seconds || 30,
           delayMax: campaign.delay_max_seconds || 120,
           dailyLimit: campaign.daily_limit || 80,

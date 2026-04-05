@@ -1,0 +1,57 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ],
+      "default": "user"
+    },
+    "business_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05e2\u05e1\u05e7"
+    },
+    "phone": {
+      "type": "string",
+      "title": "\u05d8\u05dc\u05e4\u05d5\u05df \u05e2\u05e1\u05e7"
+    },
+    "whatsapp_phone": {
+      "type": "string",
+      "title": "WhatsApp Phone"
+    },
+    "whatsapp_connected": {
+      "type": "boolean",
+      "title": "WhatsApp Connected",
+      "default": false
+    },
+    "whatsapp_type": {
+      "type": "string",
+      "title": "WhatsApp Type",
+      "enum": [
+        "personal",
+        "business"
+      ],
+      "default": "personal"
+    },
+    "whatsapp_manually_disconnected": {
+      "type": "boolean",
+      "title": "WhatsApp Manually Disconnected",
+      "default": false
+    },
+    "whatsapp_disconnected_at": {
+      "type": "string",
+      "title": "WhatsApp Disconnected At"
+    },
+    "wa_phone": {
+      "type": "string",
+      "title": "WA Phone (Legacy)"
+    },
+    "wa_connected_at": {
+      "type": "string",
+      "title": "WA Connected At (Legacy)"
+    }
+  }
+}

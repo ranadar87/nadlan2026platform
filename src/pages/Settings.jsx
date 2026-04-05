@@ -184,11 +184,19 @@ export default function Settings() {
                 </Button>
                 <Button variant="destructive" size="sm" className="text-xs" onClick={async () => {
                   setWaLoading(true);
-                  await base44.auth.updateMe({ wa_phone: null, wa_connected_at: null });
-                  setWaPhone(null);
-                  setWaConnectedAt(null);
-                  await handleConnect();
-                  toast({ title: "✅ התנתקת בהצלחה - מוכן להתחבר שוב" });
+                  try {
+                    const res = await base44.functions.invoke("disconnectWA", {});
+                    if (res.data?.ok) {
+                      setWaStatus("disconnected");
+                      setWaPhone(null);
+                      setWaConnectedAt(null);
+                      toast({ title: "✅ התנתקת בהצלחה" });
+                      // אפשר חיבור חדש
+                      await handleConnect();
+                    }
+                  } catch (e) {
+                    toast({ title: "❌ שגיאה בהתנתקה", variant: "destructive" });
+                  }
                   setWaLoading(false);
                 }} disabled={waLoading}>
                   {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <XCircle className="w-3.5 h-3.5 ml-1" />}

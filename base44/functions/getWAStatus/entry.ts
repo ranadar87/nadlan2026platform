@@ -11,71 +11,79 @@ Deno.serve(async (req) => {
     const railwaySecret = Deno.env.get("RAILWAY_API_SECRET");
     const sessionId = `user_${user.id}`;
 
-    // Helper to safely parse JSON
-    const safeJson = async (res) => {
-      const text = await res.text();
-      try { return JSON.parse(text); } catch { return null; }
-    };
-
-    const statusRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
-      headers: { Authorization: `Bearer ${railwaySecret}` },
-      signal: AbortSignal.timeout(8000),
-    }).catch(err => {
-      if (err.name === 'AbortError') {
-        return Response.json({ connected: false, status: "timeout", qr: null });
+    // קרא סטטוס מ-Railway
+    let statusData = null;
+    try {
+      const statusRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
+        headers: { Authorization: `Bearer ${railwaySecret}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (statusRes.ok) {
+        statusData = await statusRes.json();
       }
-      throw err;
-    });
-
-    if (statusRes.ok) {
-      const statusData = await safeJson(statusRes);
-      if (statusData) {
-        return Response.json({
-          sessionId,
-          connected: statusData.status === "connected",
-          status: statusData.status,
-          phone: statusData.phone || null,
-          connectedAt: statusData.connectedAt || new Date().toISOString(),
-          qr: statusData.qr || null,
-        });
-      }
-      // Railway returned HTML — server not ready
-      return Response.json({ connected: false, status: "server_unavailable", qr: null, phone: null, connectedAt: null });
+    } catch (_) {
+      // timeout או שגיאת רשת
     }
 
-    // Session not found — try to create one
-    const createRes = await fetch(`${railwayUrl}/session/create`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${railwaySecret}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ sessionId }),
-      signal: AbortSignal.timeout(8000),
-    }).catch(err => {
-      if (err.name === 'AbortError') {
-        return { ok: false };
-      }
-      throw err;
-    });
+    // אם Railway לא מכיר את ה-session — צור חדש
+    if (!statusData) {
+      const createRes = await fetch(`${railwayUrl}/session/create`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${railwaySecret}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId }),
+        signal: AbortSignal.timeout(8000),
+      }).catch(() => null);
 
-    if (!createRes.ok) {
-      return Response.json({ connected: false, status: "server_unavailable", qr: null, phone: null, connectedAt: null });
+      const createData = createRes?.ok ? await createRes.json().catch(() => null) : null;
+
+      return Response.json({
+        sessionId,
+        connected: false,
+        status: "pending_qr",
+        qr: createData?.qr || null,
+        phone: null,
+        connectedAt: null,
+      });
     }
-    const createData = await safeJson(createRes);
-    if (!createData) {
-      return Response.json({ connected: false, status: "server_unavailable", qr: null, phone: null, connectedAt: null });
+
+    // שמור phone ב-DB כשמחובר
+    const isConnected = statusData.status === "connected";
+    if (isConnected && statusData.phone) {
+      await base44.asServiceRole.entities.User.update(user.id, {
+        whatsapp_connected: true,
+        whatsapp_phone: statusData.phone,
+        whatsapp_type: statusData.waType || "personal",
+      }).catch(() => null);
+    }
+
+    // בדוק אם המשתמש ביצע ניתוק ידני
+    const users = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    const dbUser = users[0];
+    const manuallyDisconnected = dbUser?.whatsapp_manually_disconnected === true;
+
+    if (manuallyDisconnected && isConnected) {
+      // המשתמש ניתק ידנית — הרוג את ה-session ב-Railway
+      await fetch(`${railwayUrl}/session/delete/${sessionId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${railwaySecret}` },
+      }).catch(() => null);
+
+      return Response.json({
+        sessionId, connected: false, status: "disconnected",
+        qr: null, phone: null, connectedAt: null,
+      });
     }
 
     return Response.json({
       sessionId,
-      connected: false,
-      status: "pending_qr",
-      qr: createData.qr || null,
-      phone: null,
-      connectedAt: null,
+      connected: isConnected,
+      status: statusData.status,
+      phone: statusData.phone || dbUser?.whatsapp_phone || null,
+      connectedAt: isConnected ? (statusData.connectedAt || new Date().toISOString()) : null,
+      qr: statusData.qr || null,
     });
+
   } catch (error) {
-    return Response.json({ error: error.message, connected: false, phone: null, connectedAt: null }, { status: 500 });
+    return Response.json({ error: error.message, connected: false }, { status: 500 });
   }
 });

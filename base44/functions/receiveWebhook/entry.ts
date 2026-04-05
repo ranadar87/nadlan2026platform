@@ -1,64 +1,56 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-// Railway → BASE44: מקבל כל אירוע WhatsApp ומעדכן DB
 Deno.serve(async (req) => {
   try {
-    const body = await req.json();
-    const { event, data } = body;
+    // אמת שהבקשה מ-Railway
+    const secret = req.headers.get("x-railway-secret");
+    const expectedSecret = Deno.env.get("RAILWAY_API_SECRET");
+    if (!secret || secret !== expectedSecret) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const base44 = createClientFromRequest(req);
+    const body = await req.json();
+    const { messageId, status, timestamp, error } = body;
 
-    // message_id ב-Railway = campaign_message_id ב-BASE44
-    const messageId = data?.message_id;
-    if (!messageId) {
-      return Response.json({ ok: true, skipped: true });
-    }
+    if (!messageId) return Response.json({ error: 'Missing messageId' }, { status: 400 });
 
     const statusMap = {
-      "message.sent": "sent",
-      "message.delivered": "delivered",
-      "message.read": "opened",
-      "message.replied": "replied",
-      "message.failed": "failed",
+      sent: "sent", delivered: "delivered",
+      read: "opened", replied: "replied", failed: "failed"
     };
+    const dbStatus = statusMap[status] || "pending";
 
-    const newStatus = statusMap[event];
-    if (!newStatus) {
-      return Response.json({ ok: true, skipped: true });
+    const updateData = { status: dbStatus };
+    if (timestamp) {
+      const ts = new Date(timestamp).toISOString();
+      if (dbStatus === "sent")      updateData.sent_at      = ts;
+      if (dbStatus === "delivered") updateData.delivered_at = ts;
+      if (dbStatus === "opened")    updateData.opened_at    = ts;
+      if (dbStatus === "replied")   updateData.replied_at   = ts;
     }
+    if (error) updateData.error_message = error;
 
-    const timeField = {
-      sent: "sent_at",
-      delivered: "delivered_at",
-      opened: "opened_at",
-      replied: "replied_at",
-    }[newStatus];
+    const messages = await base44.asServiceRole.entities.CampaignMessage.filter({ id: messageId });
+    const message = messages[0];
+    if (!message) return Response.json({ error: 'Message not found' }, { status: 404 });
 
-    const updateData = { status: newStatus };
-    if (timeField) updateData[timeField] = new Date().toISOString();
-    if (newStatus === "failed") updateData.error_message = data?.error || "שליחה נכשלה";
-
-    // קבל campaign_id לפני העדכון כדי למנוע query נוסף
-    const messageData = await base44.asServiceRole.entities.CampaignMessage.filter({ id: messageId }).then(r => r[0]);
-    if (!messageData) return Response.json({ ok: true });
-    
-    const campaignId = messageData.campaign_id;
-    
-    // עדכן את ההודעה
     await base44.asServiceRole.entities.CampaignMessage.update(messageId, updateData);
 
     // עדכן counters בקמפיין
-    const allMsgs = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId });
-    const counts = {
-      sent_count: allMsgs.filter(m => ["sent", "delivered", "opened", "replied"].includes(m.status)).length,
-      delivered_count: allMsgs.filter(m => ["delivered", "opened", "replied"].includes(m.status)).length,
-      opened_count: allMsgs.filter(m => ["opened", "replied"].includes(m.status)).length,
-      replied_count: allMsgs.filter(m => m.status === "replied").length,
-      failed_count: allMsgs.filter(m => m.status === "failed").length,
-    };
-    await base44.asServiceRole.entities.Campaign.update(campaignId, counts)
+    const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: message.campaign_id });
+    if (campaigns[0]) {
+      const allMsgs = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: message.campaign_id });
+      await base44.asServiceRole.entities.Campaign.update(message.campaign_id, {
+        sent_count:      allMsgs.filter(m => ['sent','delivered','opened','replied'].includes(m.status)).length,
+        delivered_count: allMsgs.filter(m => ['delivered','opened','replied'].includes(m.status)).length,
+        opened_count:    allMsgs.filter(m => ['opened','replied'].includes(m.status)).length,
+        replied_count:   allMsgs.filter(m => m.status === 'replied').length,
+        failed_count:    allMsgs.filter(m => m.status === 'failed').length,
+      });
+    }
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, messageId, newStatus: dbStatus });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
