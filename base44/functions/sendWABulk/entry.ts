@@ -1,13 +1,35 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
+  const startTime = Date.now();
+  let logEntries = [];
+  let campaignIdForError = null;
+  
+  const addLog = (level, event, message, details = {}, status = null) => {
+    const log = {
+      level,
+      event,
+      message,
+      details: { ...details, timestamp: new Date().toISOString() },
+      status,
+      duration_ms: Date.now() - startTime,
+    };
+    logEntries.push(log);
+    console.log(`[${level}] ${event}: ${message}`, details);
+  };
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    addLog("INFO", "AUTH_CHECK", "משתמש מאומת", { userId: user.id });
 
-    const { campaignId, processPending } = await req.json();
+    const bodyText = await req.text();
+    const body = JSON.parse(bodyText);
+    const { campaignId, processPending } = body;
+    campaignIdForError = campaignId;
     if (!campaignId) return Response.json({ error: 'campaignId נדרש' }, { status: 400 });
+    addLog("DEBUG", "PAYLOAD_PARSED", "קבלת payload", { campaignId, processPending });
 
     const rawUrl = (Deno.env.get("RAILWAY_URL") || "").replace(/\/$/, "");
     const railwayUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
@@ -18,23 +40,34 @@ Deno.serve(async (req) => {
       : null;
 
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: campaignId });
-    if (!campaigns.length) return Response.json({ error: 'קמפיין לא נמצא' }, { status: 404 });
+    if (!campaigns.length) {
+      addLog("ERROR", "CAMPAIGN_NOT_FOUND", "קמפיין לא נמצא בDB", { campaignId }, "failed");
+      return Response.json({ error: 'קמפיין לא נמצא' }, { status: 404 });
+    }
     const campaign = campaigns[0];
+    addLog("DEBUG", "CAMPAIGN_LOADED", "קמפיין נטען", { campaignId, name: campaign.name, type: campaign.type, status: campaign.status });
 
     if (campaign.type !== "whatsapp") {
+      addLog("ERROR", "INVALID_CAMPAIGN_TYPE", "סוג קמפיין לא תמוך", { type: campaign.type }, "failed");
       return Response.json({ error: 'פונקציה זו רק ל-WhatsApp' }, { status: 400 });
     }
 
     // בדוק session
     const sessionId = `user_${user.id}`;
+    addLog("DEBUG", "SESSION_CHECK", "בדיקת חיבור WhatsApp", { sessionId, railwayUrl: railwayUrl.replace(railwaySecret, "***") });
     const sessionCheck = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
       headers: { Authorization: `Bearer ${railwaySecret}` },
     });
-    if (!sessionCheck.ok) return Response.json({ error: 'WhatsApp לא מחובר' }, { status: 400 });
+    if (!sessionCheck.ok) {
+      addLog("ERROR", "RAILWAY_UNREACHABLE", "Railway לא נגיש", { status: sessionCheck.status, url: railwayUrl }, "failed");
+      return Response.json({ error: 'WhatsApp לא מחובר' }, { status: 400 });
+    }
     const sessionData = await sessionCheck.json();
     if (sessionData.status !== "connected") {
+      addLog("WARN", "WHATSAPP_DISCONNECTED", "WhatsApp לא מחובר", { sessionStatus: sessionData.status }, "failed");
       return Response.json({ error: 'WhatsApp לא מחובר — אנא סרוק QR' }, { status: 400 });
     }
+    addLog("DEBUG", "WHATSAPP_CONNECTED", "חיבור WhatsApp אומת", { sessionStatus: sessionData.status });
 
     // אם processPending, שלח רק pending messages - אחרת שלח את כל הlead IDs
     let leadsToSend = [];
@@ -48,6 +81,7 @@ Deno.serve(async (req) => {
         pendingLeadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
       );
       leadsToSend = fetchedLeads.filter(l => l && l.phone);
+      addLog("DEBUG", "PENDING_MODE", "מצב pending - בחירת leads ממתינים", { pendingCount: leadsToSend.length });
     } else {
       // מצב ישן - שלח את כל ה-target leads
       const leadIds = campaign.target_lead_ids || [];
@@ -55,21 +89,26 @@ Deno.serve(async (req) => {
         leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
       );
       leadsToSend = fetchedLeads.filter(l => l && l.phone);
+      addLog("DEBUG", "INITIAL_MODE", "מצב ראשוני - בחירת כל target leads", { totalCount: leadsToSend.length });
     }
 
     const variations = (campaign.message_variations || []).filter(v => v.content && v.content.trim());
+    addLog("DEBUG", "VARIATION_FILTER", "סינון וריאציות", { totalVariations: campaign.message_variations?.length || 0, validVariations: variations.length });
     if (!leadsToSend.length || !variations.length) {
+      addLog("ERROR", "MISSING_DATA", "חסרים נתונים קריטיים", { leadsCount: leadsToSend.length, variationsCount: variations.length }, "failed");
       return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
     }
+    addLog("INFO", "BATCH_READY", "הכנת batch לשליחה", { leadsCount: leadsToSend.length, variationsCount: variations.length });
 
     // עדכן סטטוס לrunning
+    addLog("DEBUG", "STATUS_UPDATE", "עדכון סטטוס קמפיין ל-running", { totalRecipients: leadsToSend.length });
     await base44.asServiceRole.entities.Campaign.update(campaignId, {
       status: "running",
       total_recipients: leadsToSend.length,
     });
 
     const messages = [];
-    console.log(`[sendWABulk] שליחה לקמפיין ${campaignId}: ${leadsToSend.length} leads, ${variations.length} variations`);
+    addLog("INFO", "BATCH_START", "התחלת שליחה", { totalLeads: leadsToSend.length, totalVariations: variations.length });
     for (let i = 0; i < leadsToSend.length; i++) {
       const lead = leadsToSend[i];
       const variation = variations[i % variations.length];
@@ -85,6 +124,7 @@ Deno.serve(async (req) => {
         }).then(r => r[0]).catch(() => null);
         if (existing) {
           msg = existing;
+          addLog("DEBUG", "REUSE_MESSAGE", "שימוש ב-message קיים", { leadId: lead.id, messageId: msg.id });
         } else {
           msg = await base44.asServiceRole.entities.CampaignMessage.create({
             campaign_id: campaignId,
@@ -131,23 +171,66 @@ Deno.serve(async (req) => {
 
       if (!sendRes.ok) {
         const errData = await sendRes.json().catch(() => ({}));
-        console.error(`[sendWABulk] Failed to queue ${lead.phone}:`, sendRes.status, errData);
+        const errorMsg = "כישלון שליחה ל-" + lead.phone;
+        addLog("WARN", "SEND_FAILED", errorMsg, { phone: lead.phone, httpStatus: sendRes.status, errorData: errData });
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
           status: "failed",
-          error_message: errData.error || `HTTP ${sendRes.status}`,
+          error_message: errData.error || ("HTTP " + sendRes.status),
         });
         messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
         continue;
       }
       const sendData = await sendRes.json();
       messages.push({ leadId: lead.id, messageId: msg.id, queued: sendData.queued });
+      addLog("DEBUG", "SEND_QUEUED", "הודעה הוקעה", { phone: lead.phone, queued: sendData.queued, variation: variation.label });
     }
 
     const successCount = messages.filter(m => m.queued).length;
-    console.log(`[sendWABulk] קמפיין ${campaignId} הושלם: ${successCount}/${messages.length} בהצלחה`);
+    const finalStatus = successCount === messages.length ? "success" : successCount > 0 ? "partial" : "failed";
+    addLog("INFO", "BATCH_COMPLETE", "סיום שליחה", { queued: successCount, total: messages.length }, finalStatus);
+    
+    // שמור את כל ה-logs
+    try {
+      for (const log of logEntries) {
+        await base44.asServiceRole.entities.CampaignLog.create({
+          campaign_id: campaignId,
+          level: log.level,
+          event: log.event,
+          message: log.message,
+          details: log.details,
+          status: log.status,
+          duration_ms: log.duration_ms,
+          source_function: "sendWABulk",
+          user_id: user.id,
+        }).catch(logErr => console.error("Log save failed:", logErr));
+      }
+    } catch (logSaveErr) {
+      console.error("Failed to save logs:", logSaveErr);
+    }
+    
     return Response.json({ ok: true, campaignId, queued: successCount, total: messages.length, messages });
   } catch (error) {
-    console.error(`[sendWABulk] Critical error:`, error.message, error.stack);
+    addLog("CRITICAL", "EXCEPTION", "שגיאה קריטית", { errorMessage: error.message }, "failed");
+    
+    // שמור את ה-logs גם בכישלון
+    try {
+      for (const log of logEntries) {
+        await base44.asServiceRole.entities.CampaignLog.create({
+          campaign_id: campaignIdForError,
+          level: log.level,
+          event: log.event,
+          message: log.message,
+          details: log.details,
+          status: log.status,
+          duration_ms: log.duration_ms,
+          source_function: "sendWABulk",
+          stack_trace: log.level === "CRITICAL" ? error.stack : undefined,
+        }).catch(() => null);
+      }
+    } catch (logErr) {
+      console.error("Failed to save error logs:", logErr);
+    }
+    
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
