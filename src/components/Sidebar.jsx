@@ -16,36 +16,30 @@ const navItems = [
 export default function Sidebar() {
   const location = useLocation();
   const [credits, setCredits] = useState(null);
-  const [leadsCount, setLeadsCount] = useState(null);
 
   useEffect(() => {
-    base44.entities.CreditPackage.filter({ is_active: true }).then(pkgs => {
-      const total = pkgs.reduce((s, p) => s + (p.credits_total - (p.credits_used || 0)), 0);
-      setCredits(total);
-    }).catch(() => setCredits(0));
-
-    base44.entities.Lead.list("-created_date", 1).then(data => {
-      setLeadsCount(data.length);
-    }).catch(() => {});
+    base44.entities.CreditPackage.filter({ is_active: true })
+      .then(pkgs => setCredits(pkgs.reduce((s, p) => s + (p.credits_total - (p.credits_used || 0)), 0)))
+      .catch(() => setCredits(0));
   }, []);
 
   return (
-    <aside className="w-[200px] min-w-[200px] bg-white shadow-sidebar border-l border-border flex flex-col">
+    <aside className="w-[220px] min-w-[220px] bg-white shadow-sidebar border-l border-border flex flex-col" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* Logo */}
-      <div className="p-5 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-            <Zap className="w-4 h-4 text-white" />
+      <div className="px-5 py-6 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-glow">
+            <Zap className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-foreground tracking-tight">BrokerPro</h1>
-            <p className="text-[9px] text-muted-foreground leading-tight">ניהול לידים חכם</p>
+            <h1 className="text-base font-bold text-foreground">BrokerPro</h1>
+            <p className="text-[11px] text-muted-foreground">ניהול לידים חכם</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-2.5 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path ||
             (item.path !== "/" && location.pathname.startsWith(item.path));
@@ -54,39 +48,36 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-150 group relative ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
-                  ? "bg-primary text-white font-medium shadow-sm"
+                  ? "bg-gradient-to-l from-primary/10 to-purple-500/10 text-primary border border-primary/15 shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               }`}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
+              <Icon className={`w-[18px] h-[18px] flex-shrink-0 transition-transform duration-200 ${isActive ? "text-primary" : "group-hover:scale-110"}`} />
               <span>{item.label}</span>
-              {item.path === "/leads" && leadsCount > 0 && (
-                <span className={`mr-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>
-                  {leadsCount}
-                </span>
-              )}
+              {isActive && <div className="mr-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse-soft" />}
             </Link>
           );
         })}
       </nav>
 
-      {/* Credits */}
-      <div className="p-3 border-t border-border">
-        <div className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-medium text-muted-foreground">קרדיטים פנויים</span>
+      {/* Credits Widget */}
+      <div className="p-4 border-t border-border">
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/8 via-purple-500/5 to-transparent rounded-2xl p-4 border border-primary/10">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-muted-foreground">קרדיטים פנויים</span>
           </div>
-          <p className="text-lg font-bold text-primary mb-1.5">
+          <p className="text-2xl font-bold text-primary mb-2">
             {credits !== null ? credits.toLocaleString() : "—"}
           </p>
-          <div className="h-1.5 bg-primary/20 rounded-full overflow-hidden">
+          <div className="h-2 bg-primary/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary rounded-full transition-all duration-700"
+              className="h-full bg-gradient-to-l from-primary to-purple-400 rounded-full transition-all duration-700"
               style={{ width: credits !== null ? `${Math.min((credits / 5000) * 100, 100)}%` : "0%" }}
             />
           </div>
+          <div className="absolute top-2 left-3 w-16 h-16 bg-primary/5 rounded-full blur-xl" />
         </div>
       </div>
     </aside>

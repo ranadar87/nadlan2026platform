@@ -33,46 +33,47 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-5 max-w-7xl">
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-6 max-w-7xl animate-fade-in" style={{ fontFamily: "'Assistant', sans-serif" }}>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
-          icon={<Home className="w-5 h-5" />}
+          icon={<Home className="w-6 h-6" />}
           label='סה"כ לידים'
           value={loading ? "—" : stats.totalLeads.toLocaleString()}
           delta={`+${stats.newThisWeek} השבוע`}
           deltaType="up"
+          color="purple"
         />
         <StatCard
-          icon={<Megaphone className="w-5 h-5" />}
+          icon={<Megaphone className="w-6 h-6" />}
           label="קמפיינים פעילים"
           value={loading ? "—" : stats.activeCampaigns}
-          delta={stats.activeCampaigns > 0 ? `${stats.activeCampaigns} פעיל` : undefined}
-          deltaType="up"
+          delta={stats.activeCampaigns > 0 ? `${stats.activeCampaigns} פעיל כעת` : "אין פעילים"}
+          deltaType={stats.activeCampaigns > 0 ? "up" : "neutral"}
+          color="green"
         />
         <StatCard
-          icon={<Send className="w-5 h-5" />}
+          icon={<Send className="w-6 h-6" />}
           label="הודעות נשלחו היום"
           value={loading ? "—" : stats.sentToday}
           delta="מתוך 80 מתוכנן"
           deltaType="neutral"
+          color="blue"
         />
         <StatCard
-          icon={<Eye className="w-5 h-5" />}
+          icon={<Eye className="w-6 h-6" />}
           label="אחוז פתיחה"
           value={loading ? "—" : `${stats.openRate}%`}
           delta="+5% מחודש שעבר"
           deltaType="up"
+          color="orange"
         />
       </div>
 
-      {/* Two Columns */}
+      {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Right column: recent activity */}
         <RecentActivity />
-
-        {/* Left column: quick actions + active campaign */}
-        <div className="space-y-0">
+        <div className="flex flex-col gap-0">
           <QuickActions />
           <ActiveCampaignCard />
         </div>

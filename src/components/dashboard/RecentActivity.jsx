@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import moment from "moment";
+import "moment/locale/he";
+
+moment.locale("he");
+
+const dotConfig = {
+  yad2: "bg-primary",
+  madlan: "bg-info",
+  running: "bg-success",
+  completed: "bg-primary",
+  default: "bg-warning",
+};
 
 export default function RecentActivity() {
   const [activities, setActivities] = useState([]);
@@ -17,14 +28,14 @@ export default function RecentActivity() {
         text: `נשאבו ${b.new_leads || 0} לידים חדשים מ${b.source === "yad2" ? "יד2" : "מדלן"}`,
         sub: b.search_params?.city || "",
         time: b.created_date,
-        color: "bg-primary",
+        dot: dotConfig[b.source] || dotConfig.default,
       }));
       campaigns.forEach(c => items.push({
         id: "c" + c.id,
-        text: `קמפיין ${c.name}`,
+        text: `קמפיין "${c.name}"`,
         sub: c.status === "running" ? "פעיל" : c.status === "completed" ? "הושלם" : c.status,
         time: c.created_date,
-        color: c.status === "running" ? "bg-success" : c.status === "completed" ? "bg-info" : "bg-warning",
+        dot: dotConfig[c.status] || dotConfig.default,
       }));
       items.sort((a, b) => new Date(b.time) - new Date(a.time));
       setActivities(items.slice(0, 7));
@@ -33,23 +44,40 @@ export default function RecentActivity() {
   }, []);
 
   return (
-    <div className="bg-white rounded-2xl shadow-card border border-border p-5 flex flex-col">
-      <h3 className="text-[13px] font-semibold text-foreground mb-4">פעילות אחרונה</h3>
+    <div className="bg-white rounded-2xl border border-border shadow-card p-6 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-base font-bold text-foreground">פעילות אחרונה</h3>
+        <span className="text-xs text-muted-foreground">{activities.length} פעולות</span>
+      </div>
+
       {loading ? (
         <div className="space-y-3">
-          {[1,2,3,4].map(i => <div key={i} className="h-9 bg-secondary rounded-lg animate-pulse" />)}
+          {[1,2,3,4].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-muted animate-pulse" />
+              <div className="h-4 bg-muted rounded-lg flex-1 animate-pulse" />
+              <div className="h-3 bg-muted rounded w-16 animate-pulse" />
+            </div>
+          ))}
         </div>
       ) : activities.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">אין פעילות עדיין</p>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">אין פעילות עדיין</p>
+        </div>
       ) : (
         <div className="space-y-1">
-          {activities.map((act) => (
-            <div key={act.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-secondary/50 transition-colors">
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${act.color}`} />
+          {activities.map((act, i) => (
+            <div
+              key={act.id}
+              className="flex items-center gap-3 py-2.5 px-3 rounded-xl hover:bg-secondary/60 transition-colors cursor-default group"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${act.dot} group-hover:scale-125 transition-transform`} />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] text-foreground font-medium truncate">{act.text}</p>
+                <p className="text-sm text-foreground font-medium truncate">{act.text}</p>
+                {act.sub && <p className="text-xs text-muted-foreground">{act.sub}</p>}
               </div>
-              <p className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+              <p className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                 {moment(act.time).fromNow()}
               </p>
             </div>
