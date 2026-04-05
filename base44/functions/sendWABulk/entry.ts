@@ -62,17 +62,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
     }
 
-    const leads = await Promise.all(
-      leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
-    );
-    const validLeads = leads.filter(l => l && l.phone);
-
+    // עדכן סטטוס לrunning
     await base44.asServiceRole.entities.Campaign.update(campaignId, {
       status: "running",
-      total_recipients: validLeads.length,
+      total_recipients: leadsToSend.length,
     });
 
     const messages = [];
+    console.log(`[sendWABulk] שליחה לקמפיין ${campaignId}: ${leadsToSend.length} leads, ${variations.length} variations`);
     for (let i = 0; i < leadsToSend.length; i++) {
       const lead = leadsToSend[i];
       const variation = variations[i % variations.length];
@@ -134,7 +131,7 @@ Deno.serve(async (req) => {
 
       if (!sendRes.ok) {
         const errData = await sendRes.json().catch(() => ({}));
-        console.error(`Failed to queue message for ${lead.phone}:`, errData);
+        console.error(`[sendWABulk] Failed to queue ${lead.phone}:`, sendRes.status, errData);
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
           status: "failed",
           error_message: errData.error || `HTTP ${sendRes.status}`,
@@ -147,8 +144,10 @@ Deno.serve(async (req) => {
     }
 
     const successCount = messages.filter(m => m.queued).length;
+    console.log(`[sendWABulk] קמפיין ${campaignId} הושלם: ${successCount}/${messages.length} בהצלחה`);
     return Response.json({ ok: true, campaignId, queued: successCount, total: messages.length, messages });
   } catch (error) {
+    console.error(`[sendWABulk] Critical error:`, error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
