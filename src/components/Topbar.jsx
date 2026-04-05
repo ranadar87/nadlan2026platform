@@ -28,9 +28,11 @@ export default function Topbar() {
       try {
         const res = await base44.functions.invoke("getWAStatus", {});
         setWaStatus(res.data?.connected ? "connected" : "disconnected");
-        if (res.data?.phone && !u?.wa_phone) {
-          await base44.auth.updateMe({ wa_phone: res.data.phone });
+        if (res.data?.phone) {
           setWaPhone(res.data.phone);
+          if (!u?.wa_phone) {
+            await base44.auth.updateMe({ wa_phone: res.data.phone, wa_connected_at: res.data.connectedAt });
+          }
         }
       } catch (e) {
         setWaStatus("error");

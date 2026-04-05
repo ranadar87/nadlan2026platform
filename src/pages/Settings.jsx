@@ -12,6 +12,8 @@ export default function Settings() {
   const [profile, setProfile] = useState({ full_name: "", business_name: "", phone: "", email: "" });
 
   const [waStatus, setWaStatus] = useState(null); // null | "loading" | "connected" | "pending_qr" | "disconnected"
+  const [waPhone, setWaPhone] = useState(null);
+  const [waConnectedAt, setWaConnectedAt] = useState(null);
   const [qrCode, setQrCode] = useState(null);
   const [waLoading, setWaLoading] = useState(false);
   const pollRef = useRef(null);
@@ -47,7 +49,12 @@ export default function Settings() {
         setQrCode(null);
       } else if (data.connected) {
         setWaStatus("connected");
+        setWaPhone(data.phone || null);
+        setWaConnectedAt(data.connectedAt || null);
         setQrCode(null);
+        if (data.phone) {
+          await base44.auth.updateMe({ wa_phone: data.phone, wa_connected_at: data.connectedAt });
+        }
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       } else if (data.qr) {
         setWaStatus("pending_qr");
@@ -162,16 +169,19 @@ export default function Settings() {
         </div>
 
         {waStatus === "connected" ? (
-          <div className="flex items-center gap-3 p-4 bg-success/5 rounded-xl border border-success/15">
-            <CheckCircle className="w-5 h-5 text-success" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">WhatsApp מחובר ופעיל</p>
-              <p className="text-xs text-muted-foreground">{profile.wa_phone ? `מטווח: ${profile.wa_phone}` : "הקמפיינים שלך יישלחו דרך המספר המחובר"}</p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-4 bg-success/5 rounded-xl border border-success/15">
+              <CheckCircle className="w-5 h-5 text-success" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-foreground">WhatsApp מחובר ופעיל</p>
+                <p className="text-xs text-muted-foreground">{waPhone ? `מספר: ${waPhone}` : "הקמפיינים שלך יישלחו דרך המספר המחובר"}</p>
+                {waConnectedAt && <p className="text-[11px] text-muted-foreground/70 mt-1">עדכון אחרון: {new Date(waConnectedAt).toLocaleString('he-IL')}</p>}
+              </div>
+              <Button variant="outline" size="sm" className="text-xs" onClick={checkWAStatus} disabled={waLoading}>
+                {waLoading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 ml-1" />}
+                רענן
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="mr-auto text-xs" onClick={checkWAStatus}>
-              <RefreshCw className="w-3.5 h-3.5 ml-1" />
-              רענן
-            </Button>
           </div>
         ) : waStatus === "pending_qr" && qrCode ? (
           <div className="space-y-4">
