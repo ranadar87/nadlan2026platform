@@ -24,10 +24,16 @@ export default function Settings() {
         business_name: u.business_name || "",
         phone: u.phone || "",
         email: u.email || "",
+        wa_phone: u.wa_phone || "",
       });
     });
     checkWAStatus();
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
   }, []);
 
   const checkWAStatus = async () => {
@@ -59,35 +65,54 @@ export default function Settings() {
   const startPolling = () => {
     if (pollRef.current) return;
     pollRef.current = setInterval(async () => {
-      const res = await base44.functions.invoke("getWAStatus", {});
-      if (res.data.connected) {
-        setWaStatus("connected");
-        setQrCode(null);
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-        toast({ title: "✅ WhatsApp חובר בהצלחה!" });
-      } else if (res.data.qr) {
-        setQrCode(res.data.qr);
+      try {
+        const res = await base44.functions.invoke("getWAStatus", {}).catch(() => null);
+        if (!res || !res.data) return;
+        if (res.data.connected) {
+          setWaStatus("connected");
+          setQrCode(null);
+          if (res.data.phone) {
+            await base44.auth.updateMe({ wa_phone: res.data.phone });
+          }
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          toast({ title: "✅ WhatsApp חובר בהצלחה!" });
+        } else if (res.data.qr) {
+          setQrCode(res.data.qr);
+        }
+      } catch (e) {
+        console.error("Polling error:", e);
       }
     }, 3000);
   };
 
   const handleConnect = async () => {
     setWaLoading(true);
-    const res = await base44.functions.invoke("getWAStatus", {});
-    const data = res.data;
-    setWaLoading(false);
-    if (data.connected) {
-      setWaStatus("connected");
-    } else if (data.qr) {
-      setWaStatus("pending_qr");
-      setQrCode(data.qr);
-      startPolling();
+    try {
+      const res = await base44.functions.invoke("getWAStatus", {});
+      const data = res.data;
+      setWaLoading(false);
+      if (data.connected) {
+        setWaStatus("connected");
+        if (data.phone) {
+          await base44.auth.updateMe({ wa_phone: data.phone });
+        }
+      } else if (data.qr) {
+        setWaStatus("pending_qr");
+        setQrCode(data.qr);
+        startPolling();
+      }
+    } catch (e) {
+      setWaLoading(false);
+      setWaStatus("server_unavailable");
     }
   };
 
   const saveProfile = async () => {
-    await base44.auth.updateMe({ business_name: profile.business_name, phone: profile.phone });
+    await base44.auth.updateMe({
+      business_name: profile.business_name,
+      phone: profile.phone,
+    });
     toast({ title: "הפרופיל עודכן בהצלחה" });
   };
 
@@ -141,7 +166,7 @@ export default function Settings() {
             <CheckCircle className="w-5 h-5 text-success" />
             <div>
               <p className="text-sm font-semibold text-foreground">WhatsApp מחובר ופעיל</p>
-              <p className="text-xs text-muted-foreground">הקמפיינים שלך יישלחו דרך המספר המחובר</p>
+              <p className="text-xs text-muted-foreground">{profile.wa_phone ? `מטווח: ${profile.wa_phone}` : "הקמפיינים שלך יישלחו דרך המספר המחובר"}</p>
             </div>
             <Button variant="outline" size="sm" className="mr-auto text-xs" onClick={checkWAStatus}>
               <RefreshCw className="w-3.5 h-3.5 ml-1" />
@@ -206,8 +231,12 @@ export default function Settings() {
             <Input value={profile.business_name} onChange={e => setProfile(p => ({ ...p, business_name: e.target.value }))} className="mt-1 bg-secondary border-border" placeholder="שם המשרד / עסק" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">טלפון</Label>
-            <Input value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} className="mt-1 bg-secondary border-border" dir="ltr" />
+           <Label className="text-xs text-muted-foreground">טלפון עסק</Label>
+           <Input value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} className="mt-1 bg-secondary border-border" dir="ltr" />
+          </div>
+          <div>
+           <Label className="text-xs text-muted-foreground">WhatsApp (עדכון אוטומטי)</Label>
+           <Input value={profile.wa_phone || ""} disabled className="mt-1 bg-secondary border-border text-muted-foreground" dir="ltr" />
           </div>
         </div>
         <div className="flex justify-end mt-4">

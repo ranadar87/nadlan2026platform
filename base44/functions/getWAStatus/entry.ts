@@ -34,11 +34,12 @@ Deno.serve(async (req) => {
           sessionId,
           connected: statusData.status === "connected",
           status: statusData.status,
+          phone: statusData.phone || null,
           qr: statusData.qr || null,
         });
       }
       // Railway returned HTML — server not ready
-      return Response.json({ connected: false, status: "server_unavailable", qr: null });
+      return Response.json({ connected: false, status: "server_unavailable", qr: null, phone: null });
     }
 
     // Session not found — try to create one
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
     }
     const createData = await safeJson(createRes);
     if (!createData) {
-      return Response.json({ connected: false, status: "server_unavailable", qr: null });
+      return Response.json({ connected: false, status: "server_unavailable", qr: null, phone: null });
     }
 
     return Response.json({
@@ -70,8 +71,9 @@ Deno.serve(async (req) => {
       connected: false,
       status: "pending_qr",
       qr: createData.qr || null,
+      phone: null,
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message, connected: false, phone: null }, { status: 500 });
   }
 });

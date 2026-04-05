@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Search, Sparkles, Bell } from "lucide-react";
+import { Search, Sparkles, Bell, Smartphone, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -17,9 +17,26 @@ const pageTitles = {
 export default function Topbar() {
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [waStatus, setWaStatus] = useState(null);
+  const [waPhone, setWaPhone] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    const load = async () => {
+      const u = await base44.auth.me().catch(() => null);
+      setUser(u);
+      setWaPhone(u?.wa_phone || null);
+      try {
+        const res = await base44.functions.invoke("getWAStatus", {});
+        setWaStatus(res.data?.connected ? "connected" : "disconnected");
+        if (res.data?.phone && !u?.wa_phone) {
+          await base44.auth.updateMe({ wa_phone: res.data.phone });
+          setWaPhone(res.data.phone);
+        }
+      } catch (e) {
+        setWaStatus("error");
+      }
+    };
+    load();
   }, []);
 
   const pathKey = Object.keys(pageTitles).find(k => k !== "/" && location.pathname.startsWith(k)) || location.pathname;
@@ -47,6 +64,26 @@ export default function Topbar() {
 
       {/* Right: user info */}
       <div className="flex items-center gap-5">
+        {/* WhatsApp status */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/40">
+          {waStatus === "connected" ? (
+            <>
+              <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+              <Smartphone className="w-3.5 h-3.5 text-success" />
+              <span className="text-[11px] font-semibold text-success">{waPhone || "WhatsApp"}</span>
+            </>
+          ) : waStatus === "disconnected" ? (
+            <>
+              <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+              <span className="text-[11px] font-semibold text-warning">WhatsApp נתון</span>
+            </>
+          ) : (
+            <>
+              <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse"></div>
+              <span className="text-[11px] font-medium text-muted-foreground">בדיקה...</span>
+            </>
+          )}
+        </div>
         <div className="text-right">
           <p className="text-base font-bold text-foreground leading-tight">{title}</p>
           <p className="text-xs text-muted-foreground">{user ? `ברוך הבא, ${user.full_name}` : "ברוך הבא"} • {today}</p>
