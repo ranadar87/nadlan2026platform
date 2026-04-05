@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Link } from "react-router-dom";
-import { Plus, Megaphone, Pause, Play, Square } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Plus, Megaphone, Pause, Play, Square, Trash2, FileText, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,8 +19,10 @@ const statusColors = {
 
 export default function Campaigns() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadCampaigns = async () => {
     const data = await base44.entities.Campaign.list("-created_date", 100);
@@ -40,6 +42,15 @@ export default function Campaigns() {
   const handleStop = async (campaign) => {
     await base44.entities.Campaign.update(campaign.id, { status: "stopped" });
     toast({ title: "הקמפיין הופסק" });
+    loadCampaigns();
+  };
+
+  const handleDelete = async (campaign) => {
+    if (!window.confirm(`למחוק את הקמפיין "${campaign.name}"?`)) return;
+    setDeletingId(campaign.id);
+    await base44.entities.Campaign.delete(campaign.id);
+    toast({ title: "הקמפיין נמחק" });
+    setDeletingId(null);
     loadCampaigns();
   };
 
@@ -80,6 +91,10 @@ export default function Campaigns() {
                     </p>
                   </div>
                   <div className="flex gap-1.5">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="לוג" onClick={() => navigate(`/campaigns/log?id=${campaign.id}`)}
+                    >
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                    </Button>
                     {(campaign.status === "running" || campaign.status === "paused") && (
                       <>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTogglePause(campaign)}>
@@ -90,6 +105,9 @@ export default function Campaigns() {
                         </Button>
                       </>
                     )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={deletingId === campaign.id} onClick={() => handleDelete(campaign)}>
+                      <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
+                    </Button>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mb-2">
