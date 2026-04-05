@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
         whatsapp_phone: data?.phone || null,
         whatsapp_manually_disconnected: false,
         whatsapp_connected_at: new Date().toISOString(),
-      });
+      }).catch(e => console.log('DB update failed:', e));
       return Response.json({ ok: true, event: 'session_connected', userId });
     }
 
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.User.update(userId, {
         whatsapp_connected: false,
         whatsapp_phone: null,
-      });
+      }).catch(e => console.log('DB update failed:', e));
       return Response.json({ ok: true, event: 'session_disconnected', userId });
     }
 
