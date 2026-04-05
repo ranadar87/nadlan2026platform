@@ -27,29 +27,30 @@ export default function Topbar() {
   const today = new Date().toLocaleDateString("he-IL", { day: "numeric", month: "numeric", year: "numeric" });
 
   return (
-    <header className="h-16 min-h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-6">
-      <div>
-        <h2 className="text-lg font-bold text-foreground">{title}</h2>
-        <p className="text-xs text-muted-foreground">
-          {user ? `שלום, ${user.full_name}` : "שלום"} • {today}
-        </p>
-      </div>
+    <header className="h-14 min-h-14 border-b border-border bg-white flex items-center justify-between px-6">
       <div className="flex items-center gap-3">
         <Link to="/scrape">
-          <Button variant="outline" size="sm" className="gap-2 text-xs border-border hover:border-primary/50 hover:bg-primary/5">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8 border-border text-muted-foreground hover:text-foreground hover:border-primary/30">
             <Search className="w-3.5 h-3.5" />
             שאב לידים
           </Button>
         </Link>
         <Link to="/campaigns/new">
-          <Button size="sm" className="gap-2 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button size="sm" className="gap-1.5 text-xs h-8 bg-primary hover:bg-primary/90 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
             קמפיין חדש
           </Button>
         </Link>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-          <Bell className="w-4 h-4" />
-        </Button>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="text-left">
+          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-[11px] text-muted-foreground">{user ? `ברוך הבא, ${user.full_name}` : "ברוך הבא"} • היום {today}</p>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+          {user?.full_name?.[0] || "B"}
+        </div>
       </div>
     </header>
   );

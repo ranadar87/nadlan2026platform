@@ -41,6 +41,11 @@ module.exports = {
   				ring: 'hsl(var(--sidebar-ring))'
   			}
   		},
+      boxShadow: {
+        'card': '0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.04)',
+        'card-hover': '0 4px 12px 0 rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.05)',
+        'sidebar': '2px 0 20px 0 rgba(0,0,0,0.06)',
+      },
   		keyframes: {
   			'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
   			'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } }

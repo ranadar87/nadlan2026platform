@@ -21,7 +21,6 @@ export default function Dashboard() {
       const today = new Date().toDateString();
       const totalSent = messages.filter(m => m.status !== "pending" && m.status !== "failed").length;
       const totalOpened = messages.filter(m => m.status === "opened" || m.status === "replied").length;
-
       setStats({
         totalLeads: leads.length,
         activeCampaigns: campaigns.filter(c => c.status === "running").length,
@@ -34,16 +33,45 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Home className="w-5 h-5" />} label='סה"כ לידים' value={loading ? "..." : stats.totalLeads.toLocaleString()} delta={`+${stats.newThisWeek} השבוע`} deltaType="up" color="primary" />
-        <StatCard icon={<Megaphone className="w-5 h-5" />} label="קמפיינים פעילים" value={loading ? "..." : stats.activeCampaigns} color="success" />
-        <StatCard icon={<Send className="w-5 h-5" />} label="הודעות נשלחו היום" value={loading ? "..." : stats.sentToday} color="accent" />
-        <StatCard icon={<Eye className="w-5 h-5" />} label="אחוז פתיחה" value={loading ? "..." : `${stats.openRate}%`} color="info" />
+    <div className="space-y-5 max-w-7xl">
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<Home className="w-5 h-5" />}
+          label='סה"כ לידים'
+          value={loading ? "—" : stats.totalLeads.toLocaleString()}
+          delta={`+${stats.newThisWeek} השבוע`}
+          deltaType="up"
+        />
+        <StatCard
+          icon={<Megaphone className="w-5 h-5" />}
+          label="קמפיינים פעילים"
+          value={loading ? "—" : stats.activeCampaigns}
+          delta={stats.activeCampaigns > 0 ? `${stats.activeCampaigns} פעיל` : undefined}
+          deltaType="up"
+        />
+        <StatCard
+          icon={<Send className="w-5 h-5" />}
+          label="הודעות נשלחו היום"
+          value={loading ? "—" : stats.sentToday}
+          delta="מתוך 80 מתוכנן"
+          deltaType="neutral"
+        />
+        <StatCard
+          icon={<Eye className="w-5 h-5" />}
+          label="אחוז פתיחה"
+          value={loading ? "—" : `${stats.openRate}%`}
+          delta="+5% מחודש שעבר"
+          deltaType="up"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Two Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Right column: recent activity */}
         <RecentActivity />
+
+        {/* Left column: quick actions + active campaign */}
         <div className="space-y-0">
           <QuickActions />
           <ActiveCampaignCard />
