@@ -142,13 +142,13 @@ export default function CampaignLog() {
 
       {/* Messages table */}
       <div className="bg-white border border-border rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-0 text-xs font-semibold text-muted-foreground bg-secondary px-4 py-3 border-b border-border">
-          <span>שם / טלפון</span>
-          <span className="px-3">וריאציה</span>
-          <span className="px-3">סטטוס</span>
-          <span className="px-3">נשלח</span>
-          <span className="px-3">שגיאה</span>
-        </div>
+       <div className="grid grid-cols-[1fr_80px_120px_140px_200px] gap-0 text-xs font-semibold text-muted-foreground bg-secondary px-4 py-3 border-b border-border text-right">
+         <span>שם / טלפון</span>
+         <span>וריאציה</span>
+         <span>סטטוס</span>
+         <span>נשלח</span>
+         <span>שגיאה</span>
+       </div>
         {loading ? (
           <div className="space-y-0">
             {[1,2,3,4,5].map(i => (
@@ -162,30 +162,30 @@ export default function CampaignLog() {
             const sc = statusConfig[msg.status] || statusConfig.pending;
             const StatusIcon = sc.icon;
             return (
-              <div key={msg.id} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-0 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors">
+              <div key={msg.id} className="grid grid-cols-[1fr_80px_120px_140px_200px] gap-0 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors items-center text-right">
                 <div>
-                  <p className="text-sm font-medium text-foreground">{msg.lead_name || "—"}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono">{msg.lead_phone}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{msg.lead_name || "—"}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono truncate">{msg.lead_phone}</p>
                 </div>
-                <div className="px-3 flex items-center">
+                <div className="flex justify-center">
                   <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                     {msg.variation_used || "A"}
                   </span>
                 </div>
-                <div className="px-3 flex items-center">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${sc.color}`}>
+                <div className="flex justify-center">
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap ${sc.color}`}>
                     <StatusIcon className="w-3 h-3" />
                     {sc.label}
                   </span>
                 </div>
-                <div className="px-3 flex items-center">
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                <div className="text-center">
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap block">
                     {msg.sent_at ? moment(msg.sent_at).format("DD/MM HH:mm") : "—"}
                   </span>
                 </div>
-                <div className="px-3 flex items-center max-w-[180px]">
+                <div className="text-right">
                   {msg.error_message && (
-                    <span className="text-[10px] text-destructive truncate" title={msg.error_message}>
+                    <span className="text-[10px] text-destructive truncate block" title={msg.error_message}>
                       {msg.error_message}
                     </span>
                   )}
