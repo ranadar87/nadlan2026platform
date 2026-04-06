@@ -8,12 +8,17 @@ import { base44 } from "@/api/base44Client";
 
 const pageTitles = {
   "/": "דשבורד",
+  "/dashboard": "דשבורד",
   "/leads": "ניהול לידים",
   "/scrape": "שאיבת לידים",
   "/campaigns": "קמפיינים",
   "/reports": "דוחות",
   "/credits": "קרדיטים",
   "/settings": "הגדרות",
+  "/admin": "ניהול מערכת",
+  "/billing": "חיוב וקרדיטים",
+  "/subscription": "המנוי שלי",
+  "/pricing": "תמחור",
 };
 
 export default function Topbar() {
@@ -61,15 +66,15 @@ export default function Topbar() {
     return () => clearInterval(interval);
   }, []);
 
-  const pathKey = Object.keys(pageTitles).find(k => k !== "/" && location.pathname.startsWith(k)) || location.pathname;
-  const title = pageTitles[pathKey] || pageTitles["/"];
+  const pathKey = Object.keys(pageTitles).find(k => k !== "/" && location.pathname.startsWith(k));
+  const title = pathKey ? pageTitles[pathKey] : (pageTitles[location.pathname] || pageTitles["/"]);
   const today = new Date().toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  const initials = user?.full_name?.split(" ").map(w => w[0]).slice(0,2).join("") || "BP";
+  const initials = user?.full_name?.split(" ").map(w => w[0]).slice(0,2).join("") || "U";
 
   return (
     <>
     <HelpCenter open={showHelp} onClose={() => setShowHelp(false)} />
-    <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-8" style={{ fontFamily: "'Assistant', sans-serif" }}>
+    <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-8 gap-4" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* Left: actions */}
       <div className="flex items-center gap-3">
         <Link to="/scrape" data-tour="scrape-btn">
@@ -87,30 +92,35 @@ export default function Topbar() {
       </div>
 
       {/* Right: user info */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-3 ml-auto">
         {/* WhatsApp status */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/40">
+        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/40 text-[11px]">
           {waStatus === "connected" ? (
             <>
               <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
               <Smartphone className="w-3.5 h-3.5 text-success" />
-              <span className="text-[11px] font-semibold text-success">{waPhone || "WhatsApp"}</span>
+              <span className="font-semibold text-success truncate">{waPhone ? `${waPhone}` : "WhatsApp"}</span>
             </>
           ) : waStatus === "disconnected" ? (
             <>
               <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-              <span className="text-[11px] font-semibold text-warning">WhatsApp נתוק</span>
+              <span className="font-semibold text-warning">נתוק</span>
+            </>
+          ) : waStatus === "error" ? (
+            <>
+              <AlertTriangle className="w-3.5 h-3.5 text-destructive" />
+              <span className="font-semibold text-destructive">שגיאה</span>
             </>
           ) : (
             <>
               <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse"></div>
-              <span className="text-[11px] font-medium text-muted-foreground">בדיקה...</span>
+              <span className="font-medium text-muted-foreground">בדיקה...</span>
             </>
           )}
         </div>
-        <div className="text-right">
-          <p className="text-base font-bold text-foreground leading-tight">{title}</p>
-          <p className="text-xs text-muted-foreground">{user ? `ברוך הבא, ${user.full_name}` : "ברוך הבא"} • {today}</p>
+        <div className="text-right hidden sm:block">
+          <p className="text-sm font-bold text-foreground leading-tight">{title}</p>
+          <p className="text-xs text-muted-foreground">{user ? `${user.full_name}` : "משתמש"} • {today}</p>
         </div>
         <button onClick={() => setShowHelp(true)} title="מרכז תמיכה" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
           <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />

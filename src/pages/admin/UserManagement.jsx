@@ -49,14 +49,21 @@ export default function UserManagement() {
       toast({ title: "אנא הזן דוא״ל", variant: "destructive" });
       return;
     }
+    if (!inviteEmail.includes("@")) {
+      toast({ title: "דוא״ל לא תקין", variant: "destructive" });
+      return;
+    }
     setInviting(true);
     try {
       await base44.users.inviteUser(inviteEmail, inviteRole);
-      toast({ title: "הזמנה נשלחה", description: `הזמנה נשלחה ל-${inviteEmail}` });
+      toast({ title: "✅ הזמנה נשלחה", description: `הזמנה נשלחה ל-${inviteEmail}` });
       setInviteEmail("");
       setInviteRole("user");
+      // Reload users list
+      const allUsers = await base44.entities.User.list("-created_date", 100);
+      setUsers(allUsers);
     } catch (e) {
-      toast({ title: "שגיאה", description: e.message, variant: "destructive" });
+      toast({ title: "❌ שגיאה בשליחת הזמנה", description: e.message, variant: "destructive" });
     }
     setInviting(false);
   };

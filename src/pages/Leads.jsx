@@ -9,6 +9,7 @@ import LeadBulkActions from "../components/leads/LeadBulkActions";
 import LeadEditDialog from "../components/leads/LeadEditDialog";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
 import BatchSelector from "../components/leads/BatchSelector";
+import { Users as UsersIcon } from "lucide-react";
 
 export default function Leads() {
   const { toast } = useToast();
@@ -99,6 +100,12 @@ export default function Leads() {
       {loading ? (
         <div className="space-y-2">
           {[1,2,3,4,5].map(i => <div key={i} className="h-14 bg-card border border-border rounded-lg animate-pulse" />)}
+        </div>
+      ) : filteredLeads.length === 0 ? (
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <UsersIcon className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-foreground font-medium">אין לידים</p>
+          <p className="text-xs text-muted-foreground mt-1">שאב לידים מיד2 או מדלן כדי להתחיל</p>
         </div>
       ) : (
         <LeadTable leads={filteredLeads} selectedIds={selectedIds} onSelectChange={setSelectedIds} onEdit={setEditLead} onDelete={handleDelete} onStatusChange={handleStatusChange} onOpenDetail={setDetailLead} />

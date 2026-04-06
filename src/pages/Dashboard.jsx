@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import LiveTutorial from "../components/LiveTutorial";
-import { Home, Megaphone, Send, Eye } from "lucide-react";
+import { Home, Megaphone, Send, Eye, AlertTriangle } from "lucide-react";
 import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import QuickActions from "../components/dashboard/QuickActions";
 import LiquidProgress from "../components/ui/liquid-progress";
+import SubscriptionStatus from "../components/SubscriptionStatus";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalLeads: 0, activeCampaigns: 0, sentToday: 0, openRate: 0, newThisWeek: 0 });
@@ -41,13 +42,27 @@ export default function Dashboard() {
         newThisWeek: leads.filter(l => new Date(l.created_date) >= weekAgo).length,
       });
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(e => {
+      console.error("Dashboard load error:", e);
+      setLoading(false);
+    });
   }, []);
 
   return (
     <>
     {showTutorial && <LiveTutorial onDone={handleTutorialDone} />}
     <div className="space-y-6 max-w-7xl animate-fade-in" style={{ fontFamily: "'Assistant', sans-serif" }}>
+      <SubscriptionStatus />
+      {/* Empty state - no leads */}
+      {!loading && stats.totalLeads === 0 && (
+        <div className="bg-info/5 border border-info/20 rounded-2xl p-6 flex items-start gap-4">
+          <AlertTriangle className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-foreground">🎯 בואו נתחיל!</p>
+            <p className="text-xs text-muted-foreground mt-1">אתה עדיין ללא לידים. בואו נשאב לידים מיד2 או מדלן כדי להתחיל.</p>
+          </div>
+        </div>
+      )}
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
@@ -85,7 +100,7 @@ export default function Dashboard() {
       </div>
 
       {/* Campaign Progress Highlight */}
-      {stats.activeCampaigns > 0 && (
+      {stats.activeCampaigns > 0 ? (
         <div className="bg-white rounded-2xl border border-primary/10 shadow-card p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-foreground">קמפיינים פעילים</h3>
@@ -93,6 +108,11 @@ export default function Dashboard() {
           </div>
           <LiquidProgress value={Math.round(stats.sentToday / 80 * 100)} />
           <p className="text-xs text-muted-foreground mt-2">{stats.sentToday} מ-80 הודעות נשלחו היום</p>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10 p-6">
+          <h3 className="text-base font-bold text-foreground mb-2">🚀 בואו נתחיל קמפיין</h3>
+          <p className="text-sm text-muted-foreground mb-4">אין קמפיינים פעילים כרגע. צור קמפיין חדש כדי להתחיל לשדר הודעות ללידים שלך.</p>
         </div>
       )}
 

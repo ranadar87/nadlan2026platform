@@ -12,9 +12,14 @@ export default function Pricing() {
 
   useEffect(() => {
     const load = async () => {
-      const plansData = await base44.entities.PaymentPlan.filter({ is_active: true }, "-sort_order");
-      setPlans(plansData);
-      setLoading(false);
+      try {
+        const plansData = await base44.entities.PaymentPlan.filter({ is_active: true }, "-sort_order");
+        setPlans(plansData);
+        setLoading(false);
+      } catch (e) {
+        console.error("Error loading plans:", e);
+        setLoading(false);
+      }
     };
     load();
   }, []);
@@ -62,6 +67,10 @@ export default function Pricing() {
             {[1, 2, 3].map(i => (
               <div key={i} className="h-64 bg-secondary rounded-xl animate-pulse" />
             ))}
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-lg text-muted-foreground">אין חבילות זמינות כרגע</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-6">

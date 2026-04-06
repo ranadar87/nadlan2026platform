@@ -19,16 +19,22 @@ export default function Settings() {
   const pollRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-      setProfile({
-        full_name: u.full_name || "",
-        business_name: u.business_name || "",
-        phone: u.phone || "",
-        email: u.email || "",
-        wa_phone: u.wa_phone || "",
-      });
-    });
+    const loadUser = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+        setProfile({
+          full_name: u.full_name || "",
+          business_name: u.business_name || "",
+          phone: u.phone || "",
+          email: u.email || "",
+          wa_phone: u.wa_phone || "",
+        });
+      } catch (e) {
+        console.error("Error loading user:", e);
+      }
+    };
+    loadUser();
     checkWAStatus();
     return () => {
       if (pollRef.current) {
@@ -117,12 +123,18 @@ export default function Settings() {
   };
 
   const saveProfile = async () => {
-    await base44.auth.updateMe({
-      business_name: profile.business_name,
-      phone: profile.phone,
-      wa_phone: profile.wa_phone || "",
-    });
-    toast({ title: "הפרופיל עודכן בהצלחה" });
+    try {
+      await base44.auth.updateMe({
+        business_name: profile.business_name,
+        phone: profile.phone,
+        wa_phone: profile.wa_phone || "",
+      });
+      toast({ title: "הפרופיל עודכן בהצלחה" });
+      // Mark onboarding as complete if this is first time
+      localStorage.setItem("onboarding_completed", "1");
+    } catch (e) {
+      toast({ title: "שגיאה בעדכון פרופיל", variant: "destructive" });
+    }
   };
 
   return (
