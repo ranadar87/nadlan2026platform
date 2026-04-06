@@ -43,18 +43,9 @@ export default function Sidebar() {
   const [activeTab, setActiveTab] = useState("leads");
 
   useEffect(() => {
-    const loadCredits = async () => {
-      try {
-        const pkgs = await base44.entities.CreditPackage.filter({ is_active: true });
-        const total = pkgs.reduce((s, p) => s + (p.credits_total - (p.credits_used || 0)), 0);
-        setCredits(total);
-      } catch (e) {
-        setCredits(0);
-      }
-    };
-    loadCredits();
-    const interval = setInterval(loadCredits, 30000);
-    return () => clearInterval(interval);
+    base44.entities.CreditPackage.filter({ is_active: true })
+      .then(pkgs => setCredits(pkgs.reduce((s, p) => s + (p.credits_total - (p.credits_used || 0)), 0)))
+      .catch(() => setCredits(0));
   }, []);
 
   const navItems = navByTab[activeTab] || [];
@@ -136,28 +127,18 @@ export default function Sidebar() {
 
       {/* Credits Widget */}
       <div className="p-4 border-t border-border">
-        <div className={`relative overflow-hidden rounded-2xl p-4 border transition-colors ${
-          credits !== null && credits < 1000
-            ? "bg-destructive/8 border-destructive/20"
-            : credits !== null && credits < 5000
-            ? "bg-warning/8 border-warning/20"
-            : "bg-gradient-to-br from-primary/8 via-purple-500/5 to-transparent border-primary/10"
-        }`}>
+        <div className="relative overflow-hidden bg-gradient-to-br from-primary/8 via-purple-500/5 to-transparent rounded-2xl p-4 border border-primary/10">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold text-muted-foreground">קרדיטים פנויים</span>
           </div>
-          <p className={`text-2xl font-bold mb-2 ${
-            credits !== null && credits < 1000
-              ? "text-destructive"
-              : credits !== null && credits < 5000
-              ? "text-warning"
-              : "text-primary"
-          }`}>
+          <p className="text-2xl font-bold text-primary mb-2">
             {credits !== null ? credits.toLocaleString() : "—"}
           </p>
-          {credits !== null && credits < 5000 && (
-            <p className="text-[10px] font-semibold text-muted-foreground">⚠️ קרדיטים נמוכים</p>
-          )}
+          <div className="h-2 bg-primary/10 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-l from-primary to-purple-400 rounded-full transition-all duration-700"
+              style={{ width: credits !== null ? `${Math.min((credits / 5000) * 100, 100)}%` : "0%" }} />
+          </div>
+          <div className="absolute top-2 left-3 w-16 h-16 bg-primary/5 rounded-full blur-xl" />
         </div>
       </div>
     </aside>

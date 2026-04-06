@@ -8,10 +8,8 @@ export default function Layout() {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto px-6 py-6 w-full">
-          <div className="w-full">
-            <Outlet />
-          </div>
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
         </main>
       </div>
     </div>

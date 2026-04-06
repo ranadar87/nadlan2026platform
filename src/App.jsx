@@ -5,7 +5,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import OnboardingRedirect from '@/components/OnboardingRedirect';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
@@ -56,7 +55,6 @@ const AuthenticatedApp = () => {
 
   // Render the main app
   return (
-    <OnboardingRedirect>
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
@@ -87,7 +85,6 @@ const AuthenticatedApp = () => {
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
-    </OnboardingRedirect>
   );
 };
 

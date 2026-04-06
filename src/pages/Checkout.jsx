@@ -22,30 +22,19 @@ export default function Checkout() {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        if (!planKey) {
-          setError("חבילה לא נבחרה");
-          setLoading(false);
-          return;
-        }
+      const me = await base44.auth.me();
+      setUser(me);
+      setCustomerName(me?.full_name || "");
+      setCustomerEmail(me?.email || "");
 
-        const me = await base44.auth.me();
-        setUser(me);
-        setCustomerName(me?.full_name || "");
-        setCustomerEmail(me?.email || "");
-
-        const plans = await base44.entities.PaymentPlan.filter({ plan_key: planKey });
-        if (plans.length === 0) {
-          setError("חבילה לא נמצאה");
-          setLoading(false);
-          return;
-        }
-        setPlan(plans[0]);
+      const plans = await base44.entities.PaymentPlan.filter({ plan_key: planKey });
+      if (plans.length === 0) {
+        setError("חבילה לא נמצאה");
         setLoading(false);
-      } catch (e) {
-        setError("שגיאה בטעינת חבילה");
-        setLoading(false);
+        return;
       }
+      setPlan(plans[0]);
+      setLoading(false);
     };
     load();
   }, [planKey]);

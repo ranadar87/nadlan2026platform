@@ -3,7 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { CreditCard, Zap, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-
+const packages = [
+  { id: 1, name: "סטארטר", credits: 5000, price: 99, description: "עד 5000 הודעות" },
+  { id: 2, name: "פרו", credits: 20000, price: 299, description: "עד 20,000 הודעות", popular: true },
+  { id: 3, name: "אנטרפרייז", credits: 100000, price: 999, description: "עד 100,000 הודעות" },
+];
 
 export default function Billing() {
   const [user, setUser] = useState(null);
@@ -23,8 +27,10 @@ export default function Billing() {
   }, []);
 
   const handlePurchase = (pkg) => {
-    // Link to pricing page to buy actual subscription plans
-    window.location.href = `/pricing`;
+    // PayMe integration will be here
+    // For now, redirect to PayMe checkout
+    const paymeUrl = `https://paymeservice.com/checkout?amount=${pkg.price}&description=${pkg.name}`;
+    window.open(paymeUrl, "_blank");
   };
 
   return (
@@ -48,62 +54,47 @@ export default function Billing() {
         </div>
       )}
 
-      {/* Info */}
-      <div className="bg-info/5 border border-info/20 rounded-xl p-4">
-        <p className="text-sm text-foreground font-semibold">💡 קנה חבילות מנויים</p>
-        <p className="text-xs text-muted-foreground mt-1">כדי לקנות חבילות מנויים עם יותר קרדיטים, בקר בעמוד התמחור.</p>
-      </div>
-
       {/* Packages Grid */}
       {loading ? (
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         {[1,2,3].map(i => <div key={i} className="h-64 bg-secondary rounded-xl animate-pulse" />)}
-       </div>
-      ) : packages_data.length === 0 ? (
-       <div className="bg-card border border-border rounded-xl p-12 text-center">
-         <CreditCard className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-         <p className="text-sm text-foreground font-medium">אין חבילות זמינות כרגע</p>
-         <p className="text-xs text-muted-foreground mt-1">אנא צור קשר לתמיכה</p>
-       </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1,2,3].map(i => <div key={i} className="h-64 bg-secondary rounded-xl animate-pulse" />)}
+        </div>
       ) : (
-       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         {packages_data.map((pkg) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {packages.map((pkg) => (
             <div
               key={pkg.id}
-              className={`relative rounded-xl border-2 p-6 transition-all hover:shadow-lg border-border bg-white`}
+              className={`relative rounded-xl border-2 p-6 transition-all ${
+                pkg.popular
+                  ? "border-primary bg-primary/5 shadow-lg"
+                  : "border-border bg-white hover:border-primary/30"
+              }`}
             >
-              <div className="mb-6">
-                <h3 className="text-lg font-bold text-foreground">{pkg.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{pkg.type === "scraping" ? "שאיבת לידים" : "SMS"}</p>
-              </div>
-
-              <div className="mb-6">
-                <p className="text-3xl font-bold text-foreground">{pkg.credits_total.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground mt-1">קרדיטים בחבילה</p>
-              </div>
-
-              <div className="mb-4 bg-secondary/50 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground">שיצא בתאריך</p>
-                <p className="text-sm font-semibold text-foreground">{new Date(pkg.created_date).toLocaleDateString("he-IL")}</p>
-              </div>
-
-              {pkg.expires_at && (
-                <div className="mb-4 bg-warning/5 border border-warning/20 rounded-lg p-3">
-                  <p className="text-xs text-muted-foreground">תפוגה בתאריך</p>
-                  <p className="text-sm font-semibold text-foreground">{new Date(pkg.expires_at).toLocaleDateString("he-IL")}</p>
+              {pkg.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white px-3 py-1 rounded-full text-[10px] font-bold">
+                  פופולרי ⭐
                 </div>
               )}
-
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">משמש</p>
-                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-success rounded-full"
-                    style={{ width: `${(pkg.credits_used / pkg.credits_total) * 100}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{pkg.credits_used || 0} / {pkg.credits_total.toLocaleString()}</p>
+              <div className="mb-6">
+                <h3 className="text-lg font-bold text-foreground">{pkg.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{pkg.description}</p>
               </div>
+
+              <div className="mb-6">
+                <p className="text-3xl font-bold text-foreground">{pkg.price}₪</p>
+                <p className="text-xs text-muted-foreground mt-1">{pkg.credits.toLocaleString()} קרדיטים</p>
+                <p className="text-[11px] text-success font-semibold mt-2">
+                  {(pkg.credits / pkg.price * 100).toFixed(1)} קרדיטים לשקל
+                </p>
+              </div>
+
+              <Button
+                onClick={() => handlePurchase(pkg)}
+                className={`w-full gap-2 ${pkg.popular ? "" : "bg-secondary text-foreground hover:bg-secondary/80"}`}
+              >
+                <CreditCard className="w-4 h-4" />
+                {pkg.popular ? "בחר חבילה זו" : "קנה"}
+              </Button>
             </div>
           ))}
         </div>

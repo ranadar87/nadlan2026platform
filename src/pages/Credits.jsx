@@ -26,20 +26,6 @@ export default function Credits() {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
   }
 
-  if (activePackages.length === 0) {
-    return (
-      <div className="max-w-4xl space-y-6">
-        <h2 className="text-lg font-bold text-foreground">קרדיטים וחבילות</h2>
-        <div className="bg-card border border-border rounded-xl p-12 text-center">
-          <Zap className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-foreground font-medium">אין חבילות קרדיטים פעילות</p>
-          <p className="text-xs text-muted-foreground mt-1">רכוש חבילה כדי להתחיל לשאוב לידים.</p>
-          <Button size="sm" className="gap-2 text-xs mt-4"><Plus className="w-3.5 h-3.5" />רכוש חבילה</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
