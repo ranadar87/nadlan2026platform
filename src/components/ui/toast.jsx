@@ -15,7 +15,7 @@ ToastProvider.displayName = "ToastProvider";
 const ToastViewport = React.forwardRef(({ ...props }, ref) => (
   <div
     ref={ref}
-    className="fixed bottom-6 right-6 z-[100] flex flex-col-reverse gap-2 w-96 max-h-[calc(100vh-48px)] pointer-events-auto overflow-y-auto"
+    className="fixed bottom-6 left-6 z-[100] flex flex-col-reverse gap-2 w-96 max-h-[calc(100vh-48px)] pointer-events-auto overflow-y-auto"
     {...props}
   />
 ));
