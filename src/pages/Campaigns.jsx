@@ -53,6 +53,20 @@ export default function Campaigns() {
     loadCampaigns();
   };
 
+  const handleTogglePause = async (campaign) => {
+    const newStatus = campaign.status === "paused" ? "running" : "paused";
+    await base44.entities.Campaign.update(campaign.id, { status: newStatus });
+    toast({ title: newStatus === "paused" ? "קמפיין הושהה" : "קמפיין חודש" });
+    loadCampaigns();
+  };
+
+  const handleStop = async (campaign) => {
+    if (!window.confirm(`להפסיק את הקמפיין "${campaign.name}"?`)) return;
+    await base44.entities.Campaign.update(campaign.id, { status: "stopped" });
+    toast({ title: "קמפיין הופסק" });
+    loadCampaigns();
+  };
+
   return (
     <div className="max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
