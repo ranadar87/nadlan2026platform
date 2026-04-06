@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       ["sent", "delivered", "opened", "replied", "failed"].includes(m.status)
     ).length;
 
-    if (existingMessages.length === validLeads.length && completedCount === validLeads.length) {
+    if (existingMessages.length === leadIds.length && completedCount === leadIds.length) {
       return Response.json({ ok: true, queued: existingMessages.length, message: 'הודעות כבר תוזמנו' });
     }
 
