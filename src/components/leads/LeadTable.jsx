@@ -89,12 +89,22 @@ export default function LeadTable({ leads, selectedIds, onSelectChange, onEdit, 
                 </td>
                 {/* Name + short description - click to open detail */}
                 <td className="p-3 cursor-pointer" onClick={() => onOpenDetail && onOpenDetail(lead)}>
-                  <p className="font-semibold text-foreground hover:text-primary transition-colors">{lead.full_name}</p>
-                  {lead.description ? (
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[220px]">{lead.description}</p>
-                  ) : lead.address ? (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{lead.address}</p>
-                  ) : null}
+                  <div className="flex items-center gap-3">
+                    {/* Property thumbnail */}
+                    <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-primary/20 to-purple-500/10 flex-shrink-0 flex items-center justify-center border border-border/40">
+                      {lead.cover_image
+                        ? <img src={lead.cover_image} alt="" className="w-full h-full object-cover" />
+                        : <span className="text-primary/40 text-lg">🏠</span>}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground hover:text-primary transition-colors">{lead.full_name}</p>
+                      {lead.description ? (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[180px]">{lead.description}</p>
+                      ) : lead.address ? (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{lead.address}</p>
+                      ) : null}
+                    </div>
+                  </div>
                 </td>
                 <td className="p-3 text-foreground/80 font-mono text-xs" dir="ltr">{lead.phone}</td>
                 <td className="p-3 text-foreground/80 text-xs">{lead.city || "—"}</td>

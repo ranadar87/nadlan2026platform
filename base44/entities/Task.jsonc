@@ -1,0 +1,37 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "lead_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05dc\u05d9\u05d3"
+    },
+    "title": {
+      "type": "string",
+      "title": "\u05db\u05d5\u05ea\u05e8\u05ea"
+    },
+    "due_date": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d9\u05e2\u05d3"
+    },
+    "is_done": {
+      "type": "boolean",
+      "title": "\u05d4\u05d5\u05e9\u05dc\u05de\u05d4",
+      "default": false
+    },
+    "priority": {
+      "type": "string",
+      "title": "\u05e2\u05d3\u05d9\u05e4\u05d5\u05ea",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    }
+  },
+  "required": [
+    "lead_id",
+    "title"
+  ]
+}

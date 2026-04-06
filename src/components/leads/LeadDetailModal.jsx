@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  Phone, MapPin, Home, Tag, Calendar, MessageSquare, ExternalLink,
+  Phone, MapPin, Home, Tag, MessageSquare, ExternalLink,
   X, Edit, Save, Clock, CheckCircle, XCircle, Send, Eye, Building2,
   Layers, DollarSign, Maximize2
 } from "lucide-react";
+import LeadTasksTab from "./LeadTasksTab";
 import moment from "moment";
 import "moment/locale/he";
 moment.locale("he");
@@ -45,7 +46,7 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
     if (!lead || !open) return;
     setNotes(lead.notes || "");
     setEditing(false);
-    setActiveTab("property");
+    setActiveTab("tasks");
     setLoadingMsgs(true);
     base44.entities.CampaignMessage.filter({ lead_id: lead.id }, "-created_date", 50)
       .then(setMessages)
@@ -75,44 +76,44 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-border rounded-2xl" style={{ maxHeight: "90vh" }}>
         {/* Header with image */}
-        <div className="relative">
-          {lead.cover_image ? (
-            <img src={lead.cover_image} alt="נכס" className="w-full h-44 object-cover" />
-          ) : (
-            <div className="w-full h-32 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/20 flex items-center justify-center">
-              <Building2 className="w-12 h-12 text-primary/40" />
-            </div>
-          )}
-          <button onClick={onClose}
-            className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-          {lead.source_url && (
-            <a href={lead.source_url} target="_blank" rel="noopener noreferrer"
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          )}
-        </div>
-
-        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 176px)" }}>
-          {/* Identity row */}
-          <div className="px-6 pt-4 pb-3 border-b border-border flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">{lead.full_name}</h2>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-sm text-primary font-mono hover:underline" dir="ltr">
-                  <Phone className="w-3.5 h-3.5" />{lead.phone}
-                </a>
-                {lead.city && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" />{lead.city}{lead.neighbourhood ? ` • ${lead.neighbourhood}` : ""}
-                  </span>
+        <div className="relative flex gap-0">
+          {/* Square property image */}
+          <div className="w-40 h-40 flex-shrink-0 bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/20 flex items-center justify-center overflow-hidden">
+            {lead.cover_image
+              ? <img src={lead.cover_image} alt="נכס" className="w-full h-full object-cover" />
+              : <Building2 className="w-12 h-12 text-primary/40" />}
+          </div>
+          {/* Header info next to image */}
+          <div className="flex-1 px-5 pt-4 pb-3 border-b border-border flex flex-col justify-between">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">{lead.full_name}</h2>
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 text-sm text-primary font-mono hover:underline" dir="ltr">
+                    <Phone className="w-3.5 h-3.5" />{lead.phone}
+                  </a>
+                  {lead.city && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3" />{lead.city}{lead.neighbourhood ? ` • ${lead.neighbourhood}` : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {lead.source_url && (
+                  <a href={lead.source_url} target="_blank" rel="noopener noreferrer"
+                    className="w-8 h-8 rounded-full bg-secondary text-muted-foreground flex items-center justify-center hover:bg-border transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 )}
+                <button onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-secondary text-muted-foreground flex items-center justify-center hover:bg-border transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            {/* Status badge clickable */}
-            <div className="relative flex-shrink-0">
+            {/* Status badge */}
+            <div className="relative mt-2">
               <button
                 onClick={() => setShowStatusMenu(!showStatusMenu)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:opacity-80 ${statusConf.color}`}>
@@ -120,7 +121,7 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
                 <span className="text-[10px] opacity-60">▼</span>
               </button>
               {showStatusMenu && (
-                <div className="absolute left-0 top-full mt-1 bg-card border border-border rounded-xl shadow-card-hover z-50 overflow-hidden min-w-36">
+                <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-xl shadow-card-hover z-50 overflow-hidden min-w-36">
                   {STATUS_OPTIONS.map(opt => (
                     <button key={opt.value} onClick={() => { onStatusChange(lead, opt.value); setShowStatusMenu(false); }}
                       className={`w-full text-right px-4 py-2 text-xs font-medium hover:bg-secondary transition-colors flex items-center gap-2 ${opt.value === lead.status ? "bg-secondary/70" : ""}`}>
@@ -132,22 +133,32 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
               )}
             </div>
           </div>
+        </div>
+
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(90vh - 160px)" }}>
+
 
           {/* Tabs */}
           <div className="flex border-b border-border px-6">
             {[
+              { id: "tasks", label: "משימות" },
               { id: "property", label: "פרטי הנכס" },
               { id: "history", label: `היסטוריה (${messages.length})` },
               { id: "notes", label: "הערות" },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+                className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                  activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}>
                 {tab.label}
               </button>
             ))}
           </div>
 
           <div className="p-6">
+            {/* TAB: Tasks */}
+            {activeTab === "tasks" && <LeadTasksTab leadId={lead.id} />}
+
             {/* TAB: Property */}
             {activeTab === "property" && (
               <div className="space-y-5">
