@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, Search, Megaphone, BarChart3, Settings, CreditCard, Zap, Calendar, Briefcase } from "lucide-react";
+import CampaignStatusWidget from "./CampaignStatusWidget";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 
@@ -111,6 +112,8 @@ export default function Sidebar() {
           );
         })}
       </div>
+
+      <CampaignStatusWidget />
 
       {/* Credits Widget */}
       <div className="p-4 border-t border-border">
