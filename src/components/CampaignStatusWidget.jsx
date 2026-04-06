@@ -33,28 +33,29 @@ export default function CampaignStatusWidget() {
 
       // הודעה הבאה — הכי קרובה לעכשיו
       const now = new Date();
-      const upcoming = msgs
-        .filter(m => m.scheduled_at && ["pending", "sent"].includes(m.status))
-        .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
-        .find(m => new Date(m.scheduled_at) >= now);
+      const nextPending = msgs.find(m => ["pending", "sending"].includes(m.status));
       
-      if (upcoming?.scheduled_at) {
-        const scheduledTime = new Date(upcoming.scheduled_at);
-        const diffMs = scheduledTime - now;
-        const diffMins = Math.ceil(diffMs / 60000);
-        
-        let timeString;
-        if (diffMins <= 0) {
-          timeString = "כעת";
-        } else if (diffMins < 60) {
-          timeString = `בעוד ${diffMins} דק'`;
+      if (nextPending) {
+        if (nextPending.scheduled_at) {
+          const scheduledTime = new Date(nextPending.scheduled_at);
+          const diffMs = scheduledTime - now;
+          const diffMins = Math.ceil(diffMs / 60000);
+          
+          let timeString;
+          if (nextPending.status === "sending") {
+            timeString = "בהשליחה עכשיו";
+          } else if (diffMins <= 0) {
+            timeString = "כעת";
+          } else if (diffMins < 60) {
+            timeString = `בעוד ${diffMins} דק'`;
+          } else {
+            timeString = moment(scheduledTime).format("HH:mm");
+          }
+          setNextMsg({ ...nextPending, timeString });
         } else {
-          timeString = moment(scheduledTime).format("HH:mm");
+          // pending/sending ללא scheduled_at — תשלח בקרוב
+          setNextMsg({ ...nextPending, timeString: "בדקות הקרובות" });
         }
-        
-        setNextMsg({ ...upcoming, timeString });
-      } else if (msgs.length > 0) {
-        setNextMsg({ ...msgs[0], timeString: "בתור" });
       } else {
         setNextMsg(null);
       }
