@@ -126,6 +126,10 @@ Deno.serve(async (req) => {
       sending_started_at: nowISO,
     }).catch(() => null);
 
+    // נקי סוגריים מהודעה לפני שליחה
+    let msgToSend = nextDue.message_content;
+    msgToSend = msgToSend.replace(/\{[^}]*\}/g, "").trim();
+
     // שלח
     const sendRes = await fetch(`${railwayUrl}/message/send`, {
       method: "POST",
@@ -136,7 +140,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         sessionId,
         to: normalizePhone(nextDue.lead_phone),
-        message: nextDue.message_content,
+        message: msgToSend,
         messageId: nextDue.id,
         mediaUrl: nextDue.media_url || null,
         webhookUrl,

@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, Sparkles, Bell, Smartphone, AlertTriangle, Settings, HelpCircle } from "lucide-react";
 import HelpCenter from "./HelpCenter";
+import NotificationsPanel from "./NotificationsPanel";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -22,6 +23,8 @@ export default function Topbar() {
   const [waStatus, setWaStatus] = useState(null);
   const [waPhone, setWaPhone] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -45,6 +48,17 @@ export default function Topbar() {
       }
     };
     load();
+  }, []);
+
+  useEffect(() => {
+    const checkNotifs = async () => {
+      const msgs = await base44.entities.CampaignMessage.list("-updated_date", 50);
+      const unread = msgs.filter(m => !localStorage.getItem(`notif_${m.id}`)).length;
+      setUnreadCount(unread);
+    };
+    checkNotifs();
+    const interval = setInterval(checkNotifs, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const pathKey = Object.keys(pageTitles).find(k => k !== "/" && location.pathname.startsWith(k)) || location.pathname;
@@ -101,9 +115,21 @@ export default function Topbar() {
         <button onClick={() => setShowHelp(true)} title="מרכז תמיכה" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
           <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
         </button>
-        <button className="relative" title="אין התראות חדשות">
-          <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowNotifs(!showNotifs)}
+            className="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+            title="התראות"
+          >
+            <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+          <NotificationsPanel isOpen={showNotifs} onClose={() => setShowNotifs(false)} />
+        </div>
         <button
           onClick={() => navigate("/settings")}
           className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md hover:opacity-90 transition-opacity cursor-pointer"

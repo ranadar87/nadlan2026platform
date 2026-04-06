@@ -24,19 +24,23 @@ export default function RecentActivity() {
     ]).then(([batches, campaigns]) => {
       const items = [];
       batches.forEach(b => items.push({
-        id: "b" + b.id,
-        text: `נשאבו ${b.new_leads || 0} לידים חדשים מ${b.source === "yad2" ? "יד2" : "מדלן"}`,
-        sub: b.search_params?.city || "",
-        time: b.created_date,
-        dot: dotConfig[b.source] || dotConfig.default,
+       id: "b" + b.id,
+       text: `✨ נשאבו ${b.new_leads || 0} לידים חדשים`,
+       sub: (b.source === "yad2" ? "יד2" : "מדלן") + (b.search_params?.city ? " • " + b.search_params.city : ""),
+       time: b.created_date,
+       dot: dotConfig[b.source] || dotConfig.default,
       }));
-      campaigns.forEach(c => items.push({
-        id: "c" + c.id,
-        text: `קמפיין "${c.name}"`,
-        sub: c.status === "running" ? "פעיל" : c.status === "completed" ? "הושלם" : c.status,
-        time: c.created_date,
-        dot: dotConfig[c.status] || dotConfig.default,
-      }));
+      campaigns.forEach(c => {
+       const statusEmoji = c.status === "running" ? "🚀" : c.status === "completed" ? "✅" : c.status === "paused" ? "⏸️" : "📋";
+       const statusText = c.status === "running" ? "קמפיין הוזרק לשליחה" : c.status === "completed" ? "קמפיין הסתיים בהצלחה" : c.status === "paused" ? "קמפיין הושהה" : "קמפיין חדש";
+       items.push({
+         id: "c" + c.id,
+         text: `${statusEmoji} ${statusText}`,
+         sub: c.name,
+         time: c.created_date,
+         dot: dotConfig[c.status] || dotConfig.default,
+       });
+      });
       items.sort((a, b) => new Date(b.time) - new Date(a.time));
       setActivities(items.slice(0, 7));
       setLoading(false);

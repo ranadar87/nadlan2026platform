@@ -150,6 +150,10 @@ Deno.serve(async (req) => {
         status: "pending",
         scheduled_at: scheduledAt,
       });
+      // שמור את ה-variation שהשתמשנו בה
+      await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
+        variation_used: String.fromCharCode(65 + (i % variations.length)),
+      }).catch(() => null);
 
       messages.push({ leadId: lead.id, messageId: msg.id, scheduledAt });
 

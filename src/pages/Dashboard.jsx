@@ -5,6 +5,7 @@ import { Home, Megaphone, Send, Eye } from "lucide-react";
 import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import QuickActions from "../components/dashboard/QuickActions";
+import LiquidProgress from "../components/ui/liquid-progress";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalLeads: 0, activeCampaigns: 0, sentToday: 0, openRate: 0, newThisWeek: 0 });
@@ -82,6 +83,18 @@ export default function Dashboard() {
           color="orange"
         />
       </div>
+
+      {/* Campaign Progress Highlight */}
+      {stats.activeCampaigns > 0 && (
+        <div className="bg-white rounded-2xl border border-primary/10 shadow-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-foreground">קמפיינים פעילים</h3>
+            <span className="text-sm font-bold text-primary">{Math.round(stats.sentToday / 80 * 100)}% מהמגבלה היומית</span>
+          </div>
+          <LiquidProgress value={Math.round(stats.sentToday / 80 * 100)} />
+          <p className="text-xs text-muted-foreground mt-2">{stats.sentToday} מ-80 הודעות נשלחו היום</p>
+        </div>
+      )}
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

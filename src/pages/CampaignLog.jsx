@@ -97,8 +97,8 @@ export default function CampaignLog() {
 
   return (
     <div className="max-w-5xl space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+      {/* Header + Campaign Details */}
+      <div className="flex items-center gap-3 mb-2">
         <Button variant="ghost" size="icon" onClick={() => navigate("/campaigns")} className="rounded-xl">
           <ArrowRight className="w-5 h-5" />
         </Button>
@@ -132,6 +132,50 @@ export default function CampaignLog() {
           </Button>
         </div>
       </div>
+
+      {/* Campaign Details */}
+      {campaign && !loading && (
+        <div className="bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/10 rounded-xl p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">סוג קמפיין</p>
+              <p className="text-sm font-bold text-foreground mt-1">{campaign.type === "whatsapp" ? "📱 WhatsApp" : "📞 SMS"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">סטטוס</p>
+              <p className="text-sm font-bold text-foreground mt-1" style={{
+                color: campaign.status === "running" ? "#4ade80" : campaign.status === "completed" ? "#3b82f6" : campaign.status === "paused" ? "#f59e0b" : "#999"
+              }}>{campaign.status}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">חלון שליחה</p>
+              <p className="text-sm font-bold text-foreground mt-1">{campaign.scheduled_time_start || "09:00"} - {campaign.scheduled_time_end || "18:00"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground font-semibold">וריאציות</p>
+              <p className="text-sm font-bold text-foreground mt-1">{(campaign.message_variations || []).length} טקסטים</p>
+            </div>
+          </div>
+          {(campaign.message_variations || []).length > 0 && (
+            <div className="mt-4 pt-4 border-t border-primary/10">
+              <p className="text-[11px] text-muted-foreground font-semibold mb-2">תוכן ההודעות:</p>
+              <div className="space-y-2">
+                {campaign.message_variations.map((v, i) => (
+                  <div key={i} className="text-xs bg-white/50 rounded p-2 leading-relaxed text-foreground">
+                    <span className="font-bold text-primary">וריאציה {String.fromCharCode(65 + i)}:</span> {v.content}
+                    {(v.media_url || campaign.global_media_url) && (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <img src={v.media_url || campaign.global_media_url} alt="media" className="h-8 w-8 rounded object-cover" />
+                        <span className="text-[10px] text-muted-foreground">עם מדיה</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       {!loading && (

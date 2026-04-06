@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Megaphone, Clock, ChevronLeft, Wifi, WifiOff, AlertTriangle } from "lucide-react";
+import LiquidProgress from "./ui/liquid-progress";
 import moment from "moment";
 import "moment/locale/he";
 moment.locale("he");
@@ -106,10 +107,7 @@ export default function CampaignStatusWidget() {
             <span>{sent} נשלחו</span>
             <span>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-primary/10 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-l from-primary to-purple-400 rounded-full transition-all duration-700"
-              style={{ width: `${progress}%` }} />
-          </div>
+          <LiquidProgress value={progress} />
         </div>
 
         {/* Next message */}
