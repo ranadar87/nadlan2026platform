@@ -31,6 +31,14 @@
       "type": "string",
       "title": "\u05ea\u05d5\u05db\u05df \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4"
     },
+    "media_url": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 \u05de\u05d3\u05d9\u05d4"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "title": "\u05d6\u05de\u05df \u05e9\u05dc\u05d9\u05d7\u05d4 \u05de\u05ea\u05d5\u05d6\u05de\u05df"
+    },
     "status": {
       "type": "string",
       "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",

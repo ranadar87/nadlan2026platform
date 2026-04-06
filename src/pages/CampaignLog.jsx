@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, RefreshCw, Search, CheckCircle, XCircle, Clock, MessageSquare, Send, Eye } from "lucide-react";
+import { ArrowRight, RefreshCw, Search, CheckCircle, XCircle, Clock, MessageSquare, Send, Eye, Radio } from "lucide-react";
 import moment from "moment";
 import "moment/locale/he";
 moment.locale("he");
@@ -27,28 +27,58 @@ export default function CampaignLog() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isLive, setIsLive] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [changedIds, setChangedIds] = useState(new Set());
+  const prevStatusRef = useRef({});
+  const intervalRef = useRef(null);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!campaignId) return;
     const [cData, msgs] = await Promise.all([
       base44.entities.Campaign.filter({ id: campaignId }).then(r => r[0]),
       base44.entities.CampaignMessage.filter({ campaign_id: campaignId }, "-created_date", 500),
     ]);
     setCampaign(cData);
-    setMessages(msgs);
-    setLoading(false);
-  };
 
-  useEffect(() => {
-    loadData();
+    // מצא הודעות ששינו סטטוס — הדגש אותן
+    const newChanged = new Set();
+    msgs.forEach(m => {
+      if (prevStatusRef.current[m.id] && prevStatusRef.current[m.id] !== m.status) {
+        newChanged.add(m.id);
+      }
+    });
+    if (newChanged.size > 0) setChangedIds(newChanged);
+    setTimeout(() => setChangedIds(new Set()), 2500);
+
+    // שמור סטטוסים נוכחיים
+    const statusMap = {};
+    msgs.forEach(m => { statusMap[m.id] = m.status; });
+    prevStatusRef.current = statusMap;
+
+    setMessages(msgs);
+    setLastUpdate(new Date());
+    setLoading(false);
+
+    // עצור polling אם הקמפיין הסתיים
+    if (cData?.status === "completed" || cData?.status === "stopped") {
+      setIsLive(false);
+    }
   }, [campaignId]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, campaignId]);
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    clearInterval(intervalRef.current);
+    if (isLive) {
+      intervalRef.current = setInterval(loadData, 3000);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isLive, loadData]);
+
+
 
   const filtered = messages.filter(m => {
     const matchSearch = !search || (m.lead_name || "").includes(search) || (m.lead_phone || "").includes(search);
@@ -79,11 +109,25 @@ export default function CampaignLog() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${autoRefresh ? "bg-success/10 border-success/30 text-success" : "bg-secondary border-border text-muted-foreground hover:text-foreground"}`}>
-            <div className={`w-2 h-2 rounded-full ${autoRefresh ? "bg-success animate-pulse" : "bg-muted-foreground"}`} />
-            {autoRefresh ? "מתרענן אוטומטי" : "ריענון אוטומטי"}
+            onClick={() => setIsLive(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+              isLive ? "bg-success/10 border-success/30 text-success" : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+            }`}>
+            {isLive ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+              </span>
+            ) : (
+              <Radio className="w-3 h-3" />
+            )}
+            {isLive ? "עדכון אוטומטי" : "מושהה"}
           </button>
+          {lastUpdate && (
+            <span className="text-xs text-muted-foreground hidden sm:block">
+              עודכן {moment(lastUpdate).format("HH:mm:ss")}
+            </span>
+          )}
           <Button variant="outline" size="sm" onClick={loadData} className="gap-2">
             <RefreshCw className="w-3.5 h-3.5" /> רענן
           </Button>
@@ -163,11 +207,16 @@ export default function CampaignLog() {
             const sc = statusConfig[msg.status] || statusConfig.pending;
             const StatusIcon = sc.icon;
             return (
-              <div key={msg.id} className="grid grid-cols-[2fr_80px_120px_130px_1fr] gap-0 px-5 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/20 transition-colors items-center">
+              <div key={msg.id} className={`grid grid-cols-[2fr_80px_120px_130px_1fr] gap-0 px-5 py-3 border-b border-border/30 last:border-0 transition-all duration-700 items-center ${
+                changedIds.has(msg.id) ? "bg-primary/8 border-r-2 border-r-primary" : "hover:bg-secondary/20"
+              }`}>
                 {/* Name + Phone */}
                 <div className="text-right">
                   <p className="text-sm font-semibold text-foreground">{msg.lead_name || "—"}</p>
                   <p className="text-[11px] text-muted-foreground font-mono mt-0.5" dir="ltr">{msg.lead_phone || "—"}</p>
+                  {msg.scheduled_at && msg.status === "pending" && (
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">מתוזמן: {moment(msg.scheduled_at).format("HH:mm")}</p>
+                  )}
                 </div>
 
                 {/* Variation */}
