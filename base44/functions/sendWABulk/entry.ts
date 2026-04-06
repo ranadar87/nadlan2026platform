@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         message_content: content,
         url_media: variation.media_url || campaign.global_media_url || null,
         status: "pending",
-        at_scheduled: scheduledAt,
+        scheduled_at: scheduledAt,
       });
 
       messages.push({ leadId: lead.id, messageId: msg.id, scheduledAt });

@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     }
 
     // בדוק מגבלה יומית
-    const campaignDailyLimit = Math.min(campaign.daily_limit || 50, HARD_DAILY_LIMIT);
+    const campaignDailyLimit = Math.min(campaign.limit_daily || 80, HARD_DAILY_LIMIT);
 
     const allCampaignMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaign.id });
     const sentToday = allCampaignMessages.filter(m => {
@@ -156,13 +156,14 @@ Deno.serve(async (req) => {
       sent = 1;
       console.log(`[SENT] ${nextDue.lead_phone}`);
     } else {
+      const errorMsg = sendData?.error || `HTTP ${sendRes?.status || 'timeout'}`;
       await base44.asServiceRole.entities.CampaignMessage.update(nextDue.id, {
         status: "failed",
-        error_message: sendData?.error || `HTTP ${sendRes?.status || 'timeout'}`,
+        message_error: errorMsg,
         sending_started_at: null,
       }).catch(() => null);
       failed = 1;
-      console.log(`[FAIL] ${nextDue.lead_phone}: ${sendData?.error || 'no response'}`);
+      console.error(`[FAIL] ${nextDue.lead_phone}: ${errorMsg}`);
     }
 
     // עדכן counters

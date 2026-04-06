@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
       } else if (status === "failed") {
         updates.status = "failed";
         updates.message_error = data.error || "Unknown error";
+        console.error(`[WEBHOOK] Message ${messageId} failed:`, data.error);
       }
 
       // עדכן את ה-message
