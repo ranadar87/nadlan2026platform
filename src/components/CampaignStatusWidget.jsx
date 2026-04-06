@@ -26,17 +26,26 @@ export default function CampaignStatusWidget() {
       const c = campaigns[0];
       setCampaign(c);
 
-      // הודעות
-      const msgs = await base44.entities.CampaignMessage.filter({ campaign_id: c.id, status: "pending" }, "scheduled_at", 5);
-      setMessages(msgs);
+      // הודעות pending וsent (לא delivered/opened/replied/failed)
+      const msgs = await base44.entities.CampaignMessage.filter({ campaign_id: c.id }, "scheduled_at", 100);
+      const pending = msgs.filter(m => ["pending", "sent"].includes(m.status));
+      setMessages(pending);
 
       // הודעה הבאה — הכי קרובה לעכשיו
       const now = new Date();
       const upcoming = msgs
-        .filter(m => m.scheduled_at)
+        .filter(m => m.scheduled_at && ["pending", "sent"].includes(m.status))
         .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
         .find(m => new Date(m.scheduled_at) >= now);
-      setNextMsg(upcoming || msgs[0] || null);
+      
+      if (upcoming?.scheduled_at) {
+        const scheduledTime = new Date(upcoming.scheduled_at);
+        setNextMsg({ ...upcoming, timeString: moment(scheduledTime).format("HH:mm") });
+      } else if (msgs.length > 0) {
+        setNextMsg({ ...msgs[0], timeString: "בקרוב" });
+      } else {
+        setNextMsg(null);
+      }
 
       // סטטוס WA
       const waRes = await base44.functions.invoke("getWAStatus", {}).catch(() => null);
@@ -53,9 +62,7 @@ export default function CampaignStatusWidget() {
   const sent = campaign.sent_count || 0;
   const progress = total > 0 ? Math.round((sent / total) * 100) : 0;
 
-  const nextTime = nextMsg?.scheduled_at
-    ? moment(nextMsg.scheduled_at).fromNow()
-    : "ממתין...";
+  const nextTime = nextMsg?.timeString || "ממתין...";
 
   return (
     <div className="mx-3 mb-3 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5 overflow-hidden">
