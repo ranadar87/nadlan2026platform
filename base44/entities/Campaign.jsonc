@@ -27,6 +27,10 @@
       ],
       "default": "draft"
     },
+    "owner_user_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05d1\u05e2\u05dc \u05d4\u05e7\u05de\u05e4\u05d9\u05d9\u05df"
+    },
     "message_variations": {
       "type": "array",
       "title": "\u05d5\u05e8\u05d9\u05d0\u05e6\u05d9\u05d5\u05ea \u05d4\u05d5\u05d3\u05e2\u05d4",
@@ -66,7 +70,7 @@
     },
     "total_recipients": {
       "type": "number",
-      "title": "\u05e1\u05d4\"\u05db \u05e0\u05de\u05e2\u05e0\u05d9\u05dd"
+      "title": "\u05e1\u05d4\u05db \u05e0\u05de\u05e2\u05e0\u05d9\u05dd"
     },
     "sent_count": {
       "type": "number",
@@ -105,13 +109,13 @@
     },
     "delay_min_seconds": {
       "type": "number",
-      "title": "\u05d4\u05e9\u05d4\u05d9\u05d4 \u05de\u05d9\u05e0\u05d9\u05de\u05dc\u05d9\u05ea",
-      "default": 30
+      "title": "\u05d4\u05e9\u05d4\u05d9\u05d9\u05d4 \u05de\u05d9\u05e0\u05d9\u05de\u05dc\u05d9\u05ea",
+      "default": 600
     },
     "delay_max_seconds": {
       "type": "number",
-      "title": "\u05d4\u05e9\u05d4\u05d9\u05d4 \u05de\u05e7\u05e1\u05d9\u05de\u05dc\u05d9\u05ea",
-      "default": 120
+      "title": "\u05d4\u05e9\u05d4\u05d9\u05d9\u05d4 \u05de\u05e7\u05e1\u05d9\u05de\u05dc\u05d9\u05ea",
+      "default": 900
     },
     "start_immediately": {
       "type": "boolean",

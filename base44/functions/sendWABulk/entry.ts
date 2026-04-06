@@ -33,6 +33,11 @@ Deno.serve(async (req) => {
     const leadIds = campaign.target_lead_ids || [];
     if (!leadIds.length) return Response.json({ error: 'אין נמענים' }, { status: 400 });
 
+    // שמור owner_user_id בקמפיין (נדרש ל-processPendingCampaigns)
+    if (!campaign.owner_user_id) {
+      await base44.asServiceRole.entities.Campaign.update(campaignId, { owner_user_id: user.id }).catch(() => null);
+    }
+
     // בדוק אם כבר נוצרו messages לקמפיין
     const existingMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId });
     if (existingMessages.length) {

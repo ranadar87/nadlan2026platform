@@ -88,10 +88,13 @@ Deno.serve(async (req) => {
       }
 
       // ── 6. בדוק חיבור WA של בעל הקמפיין ──
-      const campaignOwnerId = campaign.created_by;
-      if (!campaignOwnerId) { skipped++; continue; }
-
-      const sessionId = `user_${campaignOwnerId}`;
+      const ownerId = campaign.owner_user_id;
+      if (!ownerId) {
+        console.warn(`[NO_OWNER_ID] Campaign ${campaign.id}: missing owner_user_id`);
+        skipped++;
+        continue;
+      }
+      const sessionId = `user_${ownerId}`;
       const sessionRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
         headers: { Authorization: `Bearer ${railwaySecret}` },
         signal: AbortSignal.timeout(5000),
