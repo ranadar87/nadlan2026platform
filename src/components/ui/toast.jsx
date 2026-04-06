@@ -15,7 +15,7 @@ ToastProvider.displayName = "ToastProvider";
 const ToastViewport = React.forwardRef(({ ...props }, ref) => (
   <div
     ref={ref}
-    className="fixed bottom-4 left-4 z-[100] flex flex-col gap-3 w-80 max-h-[calc(100vh-32px)] pointer-events-auto overflow-y-auto"
+    className="fixed bottom-6 right-6 z-[100] flex flex-col-reverse gap-2 w-96 max-h-[calc(100vh-48px)] pointer-events-auto overflow-y-auto"
     {...props}
   />
 ));
@@ -26,18 +26,14 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
-        destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+        default: "border-border/50 bg-card text-foreground",
+        destructive: "border-destructive/30 bg-destructive/5 text-destructive",
       },
-    },
-    defaultVariants: {
-      variant: "default",
     },
   }
 );
 
-const slideInLeftAnimation = `@keyframes slideInLeft { from { transform: translateX(-400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideOutLeft { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-400px); opacity: 0; } }`;
+
 
 
 
@@ -69,13 +65,12 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
   <button
     ref={ref}
     className={cn(
-      "absolute right-1 top-1 h-6 w-6 rounded-md p-0 text-muted-foreground hover:text-foreground focus:outline-none transition-colors cursor-pointer flex items-center justify-center",
+      "absolute right-2 top-2 h-5 w-5 rounded-md p-0 text-muted-foreground hover:text-foreground hover:bg-secondary focus:outline-none transition-colors cursor-pointer flex items-center justify-center",
       className
     )}
-    toast-close=""
     {...props}
   >
-    <X className="h-4 w-4" />
+    <X className="h-3.5 w-3.5" />
   </button>
 ));
 ToastClose.displayName = "ToastClose";
