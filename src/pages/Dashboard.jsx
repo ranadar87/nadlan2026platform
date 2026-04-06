@@ -5,7 +5,6 @@ import { Home, Megaphone, Send, Eye } from "lucide-react";
 import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import QuickActions from "../components/dashboard/QuickActions";
-import BottomNotifications from "../components/dashboard/BottomNotifications";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalLeads: 0, activeCampaigns: 0, sentToday: 0, openRate: 0, newThisWeek: 0 });
@@ -47,7 +46,6 @@ export default function Dashboard() {
   return (
     <>
     {showTutorial && <LiveTutorial onDone={handleTutorialDone} />}
-    <BottomNotifications />
     <div className="space-y-6 max-w-7xl animate-fade-in" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
