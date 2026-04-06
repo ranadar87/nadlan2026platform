@@ -49,7 +49,7 @@ export default function NotificationsPanel({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-border rounded-xl shadow-xl z-50 max-h-96 overflow-hidden flex flex-col">
+    <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-border rounded-xl shadow-xl z-50 max-h-96 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-secondary/30">
         <h3 className="text-sm font-bold text-foreground">התראות</h3>

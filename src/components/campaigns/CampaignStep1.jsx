@@ -34,6 +34,22 @@ export default function CampaignStep1({ campaign, update }) {
           );
         })}
       </div>
+      <div className="space-y-3">
+        <Label className="text-xs text-muted-foreground">בחר מקור לידים</Label>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { v: "yad2", l: "יד2", img: "https://media.base44.com/images/public/69d2b6e3a4e37f8ebe0a3486/c998f7be4_Yad2_logosvg.png" },
+            { v: "madlan", l: "מדלן", img: "https://media.base44.com/images/public/69d2b6e3a4e37f8ebe0a3486/1d827da26_Madlan_Logo.png" }
+          ].map(o => (
+            <button key={o.v} onClick={() => update("target_batch_id", o.v)} className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+              campaign.target_batch_id === o.v ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+            }`}>
+              <img src={o.img} alt={o.l} className="h-10 object-contain" />
+              <span className="text-sm font-semibold text-foreground">{o.l}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

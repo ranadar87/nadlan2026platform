@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Megaphone, Pause, Play, Square, Trash2, FileText, RefreshCw } from "lucide-react";
+import { Plus, Megaphone, Pause, Play, Square, Trash2, FileText, RefreshCw, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import moment from "moment";
 
-const statusLabels = { draft: "טיוטה", scheduled: "מתוזמן", running: "פעיל", paused: "מושהה", completed: "הושלם", stopped: "הופסק" };
+const statusLabels = { draft: "טיוטה", scheduled: "מתוזמן", running: "בתהליך", paused: "מושהה", completed: "הושלם", stopped: "הופסק", archived: "בארכיון" };
 const statusColors = {
   draft: "bg-muted text-muted-foreground",
   scheduled: "bg-info/15 text-info",
@@ -15,6 +15,7 @@ const statusColors = {
   paused: "bg-warning/15 text-warning",
   completed: "bg-primary/15 text-primary",
   stopped: "bg-destructive/15 text-destructive",
+  archived: "bg-gray-100 text-gray-700",
 };
 
 export default function Campaigns() {
@@ -29,7 +30,6 @@ export default function Campaigns() {
     const data = await base44.entities.Campaign.list("-created_date", 100);
     setCampaigns(data);
     setLoading(false);
-    // אם יש קמפיין פעיל — רענן אוטומטית כל 15 שניות
     const hasRunning = data.some(c => c.status === "running");
     if (hasRunning && !pollRef.current) {
       pollRef.current = setInterval(() => loadCampaigns(), 15000);
@@ -64,6 +64,20 @@ export default function Campaigns() {
     if (!window.confirm(`להפסיק את הקמפיין "${campaign.name}"?`)) return;
     await base44.entities.Campaign.update(campaign.id, { status: "stopped" });
     toast({ title: "קמפיין הופסק" });
+    loadCampaigns();
+  };
+
+  const handleArchive = async (campaign) => {
+    if (!window.confirm(`להעביר את הקמפיין "${campaign.name}" לארכיון?`)) return;
+    await base44.entities.Campaign.update(campaign.id, { status: "archived" });
+    toast({ title: "קמפיין עבר לארכיון" });
+    loadCampaigns();
+  };
+
+  const handleRestart = async (campaign) => {
+    if (!window.confirm(`להפעיל מחדש את הקמפיין "${campaign.name}"?`)) return;
+    await base44.entities.Campaign.update(campaign.id, { status: "running", sent_count: 0, failed_count: 0, opened_count: 0, replied_count: 0 });
+    toast({ title: "קמפיין הופעל מחדש" });
     loadCampaigns();
   };
 
@@ -108,17 +122,32 @@ export default function Campaigns() {
                     >
                       <FileText className="w-4 h-4 text-muted-foreground" />
                     </Button>
-                    {(campaign.status === "running" || campaign.status === "paused") && (
+                    {campaign.status === "running" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTogglePause(campaign)} title="השהה">
+                        <Pause className="w-4 h-4 text-warning" />
+                      </Button>
+                    )}
+                    {campaign.status === "paused" && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTogglePause(campaign)}>
-                          {campaign.status === "paused" ? <Play className="w-4 h-4 text-success" /> : <Pause className="w-4 h-4 text-warning" />}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTogglePause(campaign)} title="חזור">
+                          <Play className="w-4 h-4 text-success" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStop(campaign)}>
-                          <Square className="w-4 h-4 text-destructive" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRestart(campaign)} title="הפעל מחדש">
+                          <RefreshCw className="w-4 h-4 text-info" />
                         </Button>
                       </>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={deletingId === campaign.id} onClick={() => handleDelete(campaign)}>
+                    {(campaign.status === "running" || campaign.status === "paused") && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleStop(campaign)} title="עצור">
+                        <Square className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
+                    {campaign.status !== "archived" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleArchive(campaign)} title="לארכיון">
+                        <Archive className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8" disabled={deletingId === campaign.id} onClick={() => handleDelete(campaign)} title="מחק">
                       <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
                     </Button>
                   </div>
