@@ -23,36 +23,12 @@ export default function CampaignStep2({ campaign, update }) {
   const generateVariations = async () => {
     if (!campaign.ai_prompt) return;
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `אתה קופירייטר מומחה לנדל"ן בישראל. צור 3 וריאציות של הודעת WhatsApp שיווקית בעברית על בסיס:
-"${campaign.ai_prompt}"
-כללים: כל וריאציה עד 300 תווים, השתמש ב-{{name}} כ-placeholder לשם הנמען.
-וריאציה A: גישה מקצועית ורשמית
-וריאציה B: גישה אישית ויחסית  
-וריאציה C: גישה ישירה ותמציתית`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          variations: {
-            type: "array",
-            items: { type: "object", properties: { label: { type: "string" }, content: { type: "string" } } },
-          },
-        },
-      },
-    });
-    if (result?.variations) {
-      const newVars = result.variations.map(v => ({ ...v, media_url: "" }));
+    const res = await base44.functions.invoke('generateWithGemini', { prompt: campaign.ai_prompt });
+    if (res.data?.variations) {
+      const newVars = res.data.variations.map(v => ({ ...v, media_url: "" }));
       update("message_variations", newVars);
     }
     setGenerating(false);
-  };
-
-  const addVariation = () => {
-    if (variations.length >= MAX_VARIATIONS) return;
-    const labels = ["A","B","C","D","E","F","G","H","I","J"];
-    update("message_variations", [...variations, { label: `וריאציה ${labels[variations.length]}`, content: "", media_url: "" }]);
-    setEditingIdx(variations.length);
-    setEditContent("");
   };
 
   const removeVariation = (idx) => {
