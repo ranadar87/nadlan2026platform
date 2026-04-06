@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Loader2, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,40 @@ import { base44 } from "@/api/base44Client";
 import SourceSelector from "../components/scrape/SourceSelector";
 import ScrapeForm from "../components/scrape/ScrapeForm";
 
+const TEMPLATES_KEY = "scrape_templates";
+
 export default function Scrape() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [source, setSource] = useState("yad2");
   const [params, setParams] = useState({ max_items: "150", deal_type: "buy" });
   const [scraping, setScraping] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateName, setTemplateName] = useState("");
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  const estimatedCredits = Number(params.max_items) || 150;
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(TEMPLATES_KEY) || "[]");
+      setTemplates(saved);
+    } catch {}
+  }, []);
+
+  const handleSaveTemplate = () => {
+    if (!templateName.trim()) return;
+    const newTemplates = [...templates, { name: templateName.trim(), source, params }];
+    localStorage.setItem(TEMPLATES_KEY, JSON.stringify(newTemplates));
+    setTemplates(newTemplates);
+    setTemplateName("");
+    setShowSaveDialog(false);
+    toast({ title: "תבנית נשמרה", description: `"${templateName}" נשמרה בהצלחה` });
+  };
+
+  const loadTemplate = (tpl) => {
+    setSource(tpl.source);
+    setParams(tpl.params);
+    toast({ title: "תבנית נטענה", description: `"${tpl.name}" נטענה` });
+  };
 
   const handleScrape = async () => {
     if (!params.city) {
@@ -71,23 +97,52 @@ export default function Scrape() {
         <div className="border-t border-border" />
         <ScrapeForm params={params} onChange={setParams} />
         <div className="border-t border-border" />
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-start gap-3">
-          <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+        {/* Templates */}
+        {templates.length > 0 && (
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-muted-foreground">תבניות שמורות:</span>
+            {templates.map((tpl, i) => (
+              <button key={i} onClick={() => loadTemplate(tpl)}
+                className="text-xs px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
+                {tpl.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="bg-info/5 border border-info/20 rounded-lg p-4 flex items-start gap-3">
+          <Lightbulb className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-foreground">עלות שאיבה מוערכת: ~{estimatedCredits} קרדיטים</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              בהתבסס על פרמטרי החיפוש
-              {source === "both" && " • שאיבה כפולה = עלות כפולה"}
+            <p className="text-sm font-semibold text-foreground">מערכת קרדיטים</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              כל שאיבה מנכה קרדיטים מהחשבון שלך לפי כמות הלידים שנמצאו בפועל (לא לפי כמות מבוקשת). ניתן לרכוש קרדיטים נוספים בדף <strong>קרדיטים</strong>.
+              {source === "both" && " שאיבה מ-2 מקורות מנכה פעמיים."}
             </p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <Button className="gap-2" onClick={handleScrape} disabled={scraping}>
-            {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            {scraping ? "שואב לידים..." : "התחל שאיבה"}
-          </Button>
-          <Button variant="outline" className="border-border">שמור כתבנית</Button>
-        </div>
+
+        {showSaveDialog ? (
+          <div className="flex gap-2 items-center">
+            <input
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              placeholder="שם התבנית..."
+              className="flex-1 h-9 px-3 rounded-md border border-input bg-secondary text-sm"
+              onKeyDown={e => e.key === "Enter" && handleSaveTemplate()}
+              autoFocus
+            />
+            <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim()}>שמור</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowSaveDialog(false)}>ביטול</Button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <Button className="gap-2" onClick={handleScrape} disabled={scraping}>
+              {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              {scraping ? "שואב לידים..." : "התחל שאיבה"}
+            </Button>
+            <Button variant="outline" className="border-border" onClick={() => setShowSaveDialog(true)}>שמור כתבנית</Button>
+          </div>
+        )}
       </div>
     </div>
   );

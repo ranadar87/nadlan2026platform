@@ -50,17 +50,15 @@ export default function Sidebar() {
   return (
     <aside className="w-[220px] min-w-[220px] bg-white shadow-sidebar border-l border-border flex flex-col" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-glow">
-            <Zap className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">BrokerPro</h1>
-            <p className="text-[11px] text-muted-foreground">ניהול לידים חכם</p>
-          </div>
+      <Link to="/" className="px-5 py-5 border-b border-border flex items-center gap-3 hover:bg-secondary/30 transition-colors">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-glow">
+          <Zap className="w-5 h-5 text-white" />
         </div>
-      </div>
+        <div>
+          <h1 className="text-base font-bold text-foreground">BrokerPro</h1>
+          <p className="text-[11px] text-muted-foreground">ניהול לידים חכם</p>
+        </div>
+      </Link>
 
       {/* Main tabs (2×2 grid) */}
       <div className="px-3 pt-3 pb-2 border-b border-border">

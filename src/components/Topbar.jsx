@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { Search, Sparkles, Bell, Smartphone, AlertTriangle } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Search, Sparkles, Bell, Smartphone, AlertTriangle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -16,6 +16,7 @@ const pageTitles = {
 
 export default function Topbar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [waStatus, setWaStatus] = useState(null);
   const [waPhone, setWaPhone] = useState(null);
@@ -93,13 +94,15 @@ export default function Topbar() {
           <p className="text-base font-bold text-foreground leading-tight">{title}</p>
           <p className="text-xs text-muted-foreground">{user ? `ברוך הבא, ${user.full_name}` : "ברוך הבא"} • {today}</p>
         </div>
-        <button className="relative">
+        <button className="relative" title="אין התראות חדשות">
           <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-destructive rounded-full" />
         </button>
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+        <button
+          onClick={() => navigate("/settings")}
+          className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md hover:opacity-90 transition-opacity cursor-pointer"
+          title="הגדרות חשבון">
           {initials}
-        </div>
+        </button>
       </div>
     </header>
   );
