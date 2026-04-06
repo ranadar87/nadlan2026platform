@@ -49,8 +49,8 @@ Deno.serve(async (req) => {
 
     // חשב זמני שליחה — הודעה ראשונה מיד, שאר עם delay מצטבר
     const now = new Date();
-    const delayMin = (campaign.delay_min_seconds || 30);
-    const delayMax = (campaign.delay_max_seconds || 120);
+    const delayMin = (campaign.delay_min_seconds || 600);
+    const delayMax = (campaign.delay_max_seconds || 900);
     const messages = [];
 
     let cumulativeDelay = 0; // בשניות

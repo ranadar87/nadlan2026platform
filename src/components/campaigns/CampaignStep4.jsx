@@ -217,7 +217,7 @@ export default function CampaignStep4({ campaign, update }) {
           <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-primary" />{getScheduledSummary()}</li>
           <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-info" />חלון שליחה: {campaign.scheduled_time_start || "09:00"} — {campaign.scheduled_time_end || "18:00"}</li>
           <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-warning" />עד {campaign.daily_limit || 80} הודעות ביום</li>
-          <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-success" />השהיה {campaign.delay_min_seconds || 30}–{campaign.delay_max_seconds || 120} שניות בין הודעות</li>
+          <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-success" />השהיה {campaign.delay_min_seconds || 600}–{campaign.delay_max_seconds || 900} שניות בין הודעות</li>
           {daysEstimate && <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-accent" />משך משוער: ~{daysEstimate} ימים</li>}
         </ul>
       </div>
