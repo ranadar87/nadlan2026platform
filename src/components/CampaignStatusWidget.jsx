@@ -49,7 +49,7 @@ export default function CampaignStatusWidget() {
 
       // סטטוס WA
       const waRes = await base44.functions.invoke("getWAStatus", {}).catch(() => null);
-      setWaConnected(waRes?.data?.status === "connected");
+      setWaConnected(waRes?.data?.connected === true);
     } catch {
       // silent
     }

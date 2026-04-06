@@ -54,12 +54,21 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // ── 3. בדוק חלון שעות שליחה ──
-      const windowStart = campaign.scheduled_time_start || "09:00";
-      const windowEnd = campaign.scheduled_time_end || "18:00";
-      if (currentTimeStr < windowStart || currentTimeStr > windowEnd) {
-        skipped++;
-        continue;
+      // ── 3. בדוק scheduled_at תחילה — אם קבוע, בדוק אם הגיע הזמן ──
+      if (msg.scheduled_at) {
+        const scheduledAt = new Date(msg.scheduled_at);
+        if (scheduledAt > now) {
+          skipped++;
+          continue;
+        }
+      } else {
+        // אם לא קבוע, בדוק חלון שעות כללי ──
+        const windowStart = campaign.scheduled_time_start || "09:00";
+        const windowEnd = campaign.scheduled_time_end || "18:00";
+        if (currentTimeStr < windowStart || currentTimeStr > windowEnd) {
+          skipped++;
+          continue;
+        }
       }
 
       // ── 4. בדוק מגבלה יומית (קמפיין + HARD_LIMIT) ──
@@ -76,15 +85,6 @@ Deno.serve(async (req) => {
         console.log(`[DAILY_LIMIT] Campaign ${campaign.id}: ${sentToday}/${campaignDailyLimit} today`);
         skipped++;
         continue;
-      }
-
-      // ── 5. בדוק scheduled_at — האם הגיע הזמן? ──
-      if (msg.scheduled_at) {
-        const scheduledAt = new Date(msg.scheduled_at);
-        if (scheduledAt > now) {
-          skipped++;
-          continue;
-        }
       }
 
       // ── 6. בדוק חיבור WA של בעל הקמפיין ──
