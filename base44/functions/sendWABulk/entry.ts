@@ -1,167 +1,75 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
-Deno.serve(async (req) => {
-  const startTime = Date.now();
-  let logEntries = [];
-  let campaignIdForError = null;
-  
-  const addLog = (level, event, message, details = {}, status = null) => {
-    const log = {
-      level,
-      event,
-      message,
-      details: { ...details, timestamp: new Date().toISOString() },
-      status,
-      duration_ms: Date.now() - startTime,
-    };
-    logEntries.push(log);
-    console.log(`[${level}] ${event}: ${message}`, details);
-  };
+const HARD_DAILY_LIMIT = 80;
 
+// נרמל מספר טלפון לפורמט בינלאומי
+function normalizePhone(phone) {
+  let p = (phone || "").replace(/[\-\s]/g, "");
+  if (p.startsWith("0")) p = "972" + p.slice(1);
+  return p;
+}
+
+// נקה שם מסוגריים מיוחדים שנשמרו בDB
+function cleanName(name) {
+  return (name || "").replace(/[{}]/g, "").trim();
+}
+
+Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    addLog("INFO", "AUTH_CHECK", "משתמש מאומת", { userId: user.id });
 
-    const bodyText = await req.text();
-    const body = JSON.parse(bodyText);
+    const body = await req.json();
     const { campaignId, processPending } = body;
-    campaignIdForError = campaignId;
     if (!campaignId) return Response.json({ error: 'campaignId נדרש' }, { status: 400 });
-    addLog("DEBUG", "PAYLOAD_PARSED", "קבלת payload", { campaignId, processPending });
 
     const rawUrl = (Deno.env.get("RAILWAY_URL") || "").replace(/\/$/, "");
     const railwayUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
     const railwaySecret = Deno.env.get("RAILWAY_API_SECRET");
     const webhookUrl = Deno.env.get("BASE44_WEBHOOK_URL");
-    
-    if (!webhookUrl) {
-      addLog("ERROR", "WEBHOOK_MISSING", "BASE44_WEBHOOK_URL not set — please add to env vars", {}, "failed");
-      return Response.json({ error: 'Missing BASE44_WEBHOOK_URL env variable' }, { status: 500 });
-    }
 
+    if (!webhookUrl) return Response.json({ error: 'Missing BASE44_WEBHOOK_URL' }, { status: 500 });
+
+    // טען קמפיין
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: campaignId });
-    if (!campaigns.length) {
-      addLog("ERROR", "CAMPAIGN_NOT_FOUND", "קמפיין לא נמצא בDB", { campaignId }, "failed");
-      return Response.json({ error: 'קמפיין לא נמצא' }, { status: 404 });
-    }
+    if (!campaigns.length) return Response.json({ error: 'קמפיין לא נמצא' }, { status: 404 });
     const campaign = campaigns[0];
-    addLog("DEBUG", "CAMPAIGN_LOADED", "קמפיין נטען", { campaignId, name: campaign.name, type: campaign.type, status: campaign.status });
 
-    if (campaign.type !== "whatsapp") {
-      addLog("ERROR", "INVALID_CAMPAIGN_TYPE", "סוג קמפיין לא תמוך", { type: campaign.type }, "failed");
-      return Response.json({ error: 'פונקציה זו רק ל-WhatsApp' }, { status: 400 });
-    }
+    if (campaign.type !== "whatsapp") return Response.json({ error: 'פונקציה זו רק ל-WhatsApp' }, { status: 400 });
 
-    // בדוק session
+    // בדוק חיבור WhatsApp
     const sessionId = `user_${user.id}`;
-    addLog("DEBUG", "SESSION_CHECK", "בדיקת חיבור WhatsApp", { sessionId, railwayUrl: railwayUrl.replace(railwaySecret, "***") });
     const sessionCheck = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
       headers: { Authorization: `Bearer ${railwaySecret}` },
     });
-    if (!sessionCheck.ok) {
-      addLog("ERROR", "RAILWAY_UNREACHABLE", "Railway לא נגיש", { status: sessionCheck.status, url: railwayUrl }, "failed");
-      return Response.json({ error: 'WhatsApp לא מחובר' }, { status: 400 });
-    }
+    if (!sessionCheck.ok) return Response.json({ error: 'WhatsApp לא מחובר' }, { status: 400 });
     const sessionData = await sessionCheck.json();
-    if (sessionData.status !== "connected") {
-      addLog("WARN", "WHATSAPP_DISCONNECTED", "WhatsApp לא מחובר", { sessionStatus: sessionData.status }, "failed");
-      return Response.json({ error: 'WhatsApp לא מחובר — אנא סרוק QR' }, { status: 400 });
-    }
-    addLog("DEBUG", "WHATSAPP_CONNECTED", "חיבור WhatsApp אומת", { sessionStatus: sessionData.status });
-
-    // אם processPending, שלח רק pending messages - אחרת שלח את כל הlead IDs
-    let leadsToSend = [];
-    if (processPending) {
-      const pendingMsgs = await base44.asServiceRole.entities.CampaignMessage.filter({
-        campaign_id: campaignId,
-        status: "pending",
-      });
-      const pendingLeadIds = [...new Set(pendingMsgs.map(m => m.lead_id))];
-      const fetchedLeads = await Promise.all(
-        pendingLeadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
-      );
-      leadsToSend = fetchedLeads.filter(l => l && l.phone);
-      addLog("DEBUG", "PENDING_MODE", "מצב pending - בחירת leads ממתינים", { pendingCount: leadsToSend.length });
-    } else {
-      // מצב ישן - שלח את כל ה-target leads
-      const leadIds = campaign.target_lead_ids || [];
-      const fetchedLeads = await Promise.all(
-        leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
-      );
-      leadsToSend = fetchedLeads.filter(l => l && l.phone);
-      addLog("DEBUG", "INITIAL_MODE", "מצב ראשוני - בחירת כל target leads", { totalCount: leadsToSend.length });
-    }
+    if (sessionData.status !== "connected") return Response.json({ error: 'WhatsApp לא מחובר — אנא סרוק QR' }, { status: 400 });
 
     const variations = (campaign.message_variations || []).filter(v => v.content && v.content.trim());
-    addLog("DEBUG", "VARIATION_FILTER", "סינון וריאציות", { totalVariations: campaign.message_variations?.length || 0, validVariations: variations.length });
-    if (!leadsToSend.length || !variations.length) {
-      addLog("ERROR", "MISSING_DATA", "חסרים נתונים קריטיים", { leadsCount: leadsToSend.length, variationsCount: variations.length }, "failed");
-      return Response.json({ error: 'אין נמענים או תוכן הודעה' }, { status: 400 });
-    }
-    addLog("INFO", "BATCH_READY", "הכנת batch לשליחה", { leadsCount: leadsToSend.length, variationsCount: variations.length, webhookUrl });
+    if (!variations.length) return Response.json({ error: 'אין תוכן הודעה' }, { status: 400 });
 
-    // עדכן סטטוס לrunning
-    addLog("DEBUG", "STATUS_UPDATE", "עדכון סטטוס קמפיין ל-running", { totalRecipients: leadsToSend.length });
-    await base44.asServiceRole.entities.Campaign.update(campaignId, {
-      status: "running",
-      total_recipients: leadsToSend.length,
-    });
+    // ── שלב 1: יצירת כל CampaignMessages כ-pending (רק בקריאה הראשונה) ──
+    if (!processPending) {
+      const leadIds = campaign.target_lead_ids || [];
+      if (!leadIds.length) return Response.json({ error: 'אין נמענים' }, { status: 400 });
 
-    // נרמל מספרי טלפון לפורמט בינלאומי
-    const normalizePhone = (phone) => {
-      let p = (phone || "").replace(/[\-\s]/g, "");
-      if (p.startsWith("0")) p = "972" + p.slice(1);
-      return p;
-    };
+      // בדוק אם כבר נוצרו messages לקמפיין הזה
+      const existingMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId });
+      
+      if (!existingMessages.length) {
+        // צור messages עבור כל הלידים
+        const fetchedLeads = await Promise.all(
+          leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
+        );
+        const validLeads = fetchedLeads.filter(l => l && l.phone);
 
-    // ── הגבלה יומית מוחלטת: מקסימום 50 הודעות/יום ────────────────────────
-    const HARD_DAILY_LIMIT = 50;
-    const userDailyLimit = Math.min(campaign.daily_limit || 50, HARD_DAILY_LIMIT);
-
-    // בדוק כמה הודעות נשלחו היום
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayMessages = await base44.asServiceRole.entities.CampaignMessage.filter({
-      campaign_id: campaignId,
-      status: "sent",
-    }).then(msgs => msgs.filter(m => new Date(m.sent_at || m.created_date) >= todayStart)).catch(() => []);
-    const sentTodayCount = todayMessages.length;
-    const remainingToday = Math.max(0, userDailyLimit - sentTodayCount);
-
-    addLog("INFO", "DAILY_LIMIT_CHECK", "בדיקת מגבלה יומית", { sentToday: sentTodayCount, limit: userDailyLimit, remaining: remainingToday });
-
-    if (remainingToday === 0) {
-      addLog("WARN", "DAILY_LIMIT_REACHED", "מגבלת היום הגיעה — לא נשלח כלום", {}, "failed");
-      return Response.json({ error: `הגעת למגבלת ${userDailyLimit} הודעות ליום. נסה מחר.` }, { status: 429 });
-    }
-
-    // חתוך את רשימת השליחה לפי המותר להיום
-    const leadsForToday = leadsToSend.slice(0, remainingToday);
-    addLog("INFO", "TODAY_BATCH", "קביעת אצוות היום", { total: leadsToSend.length, todayBatch: leadsForToday.length, remaining: remainingToday });
-
-    const messages = [];
-    addLog("INFO", "BATCH_START", "התחלת שליחה",
-      { totalLeads: leadsForToday.length, totalVariations: variations.length });
-    for (let i = 0; i < leadsForToday.length; i++) {
-      const lead = leadsForToday[i];
-      const variation = variations[i % variations.length];
-      const content = (variation.content || "").replace("{name}", lead.full_name || "");
-
-      // אם processPending, חפש אם already יש pending message לlead הזה
-      let msg;
-      if (processPending) {
-        const existing = await base44.asServiceRole.entities.CampaignMessage.filter({
-          campaign_id: campaignId,
-          lead_id: lead.id,
-          status: "pending",
-        }).then(r => r[0]).catch(() => null);
-        if (existing) {
-          msg = existing;
-          addLog("DEBUG", "REUSE_MESSAGE", "שימוש ב-message קיים", { leadId: lead.id, messageId: msg.id });
-        } else {
-          msg = await base44.asServiceRole.entities.CampaignMessage.create({
+        for (let i = 0; i < validLeads.length; i++) {
+          const lead = validLeads[i];
+          const variation = variations[i % variations.length];
+          const content = (variation.content || "").replace(/\{name\}/g, cleanName(lead.full_name));
+          await base44.asServiceRole.entities.CampaignMessage.create({
             campaign_id: campaignId,
             lead_id: lead.id,
             lead_name: lead.full_name,
@@ -171,17 +79,56 @@ Deno.serve(async (req) => {
             status: "pending",
           });
         }
-      } else {
-        msg = await base44.asServiceRole.entities.CampaignMessage.create({
-          campaign_id: campaignId,
-          lead_id: lead.id,
-          lead_name: lead.full_name,
-          lead_phone: lead.phone,
-          variation_used: variation.label || "A",
-          message_content: content,
-          status: "pending",
+
+        await base44.asServiceRole.entities.Campaign.update(campaignId, {
+          status: "running",
+          total_recipients: validLeads.length,
+          sent_count: 0,
+          failed_count: 0,
         });
+        console.log(`[INIT] Created ${validLeads.length} pending messages`);
       }
+    }
+
+    // ── שלב 2: חשב כמה ניתן לשלוח היום ──
+    const userDailyLimit = Math.min(campaign.daily_limit || 50, HARD_DAILY_LIMIT);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const allMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId });
+    const sentToday = allMessages.filter(m =>
+      (m.status === "sent" || m.status === "delivered" || m.status === "opened" || m.status === "replied") &&
+      new Date(m.sent_at || m.created_date) >= todayStart
+    ).length;
+
+    const remainingToday = Math.max(0, userDailyLimit - sentToday);
+    if (remainingToday === 0) {
+      return Response.json({ ok: true, queued: 0, skipped: 0, message: `הגעת למגבלת ${userDailyLimit} הודעות להיום` });
+    }
+
+    // ── שלב 3: שלח את האצווה היומית ──
+    const pendingMessages = allMessages.filter(m => m.status === "pending").slice(0, remainingToday);
+    
+    if (!pendingMessages.length) {
+      // אין יותר pending — עדכן לcompleted
+      const sentTotal = allMessages.filter(m => m.status !== "pending" && m.status !== "failed").length;
+      if (sentTotal > 0) {
+        await base44.asServiceRole.entities.Campaign.update(campaignId, { status: "completed" });
+      }
+      return Response.json({ ok: true, queued: 0, message: "כל ההודעות נשלחו" });
+    }
+
+    console.log(`[SEND] Sending batch of ${pendingMessages.length} (daily limit: ${userDailyLimit}, sent today: ${sentToday})`);
+
+    let queuedCount = 0;
+    let failedCount = 0;
+
+    for (const msg of pendingMessages) {
+      const lead = await base44.asServiceRole.entities.Lead.filter({ id: msg.lead_id }).then(r => r[0]).catch(() => null);
+      if (!lead) { failedCount++; continue; }
+
+      // החלף {name} בשם נקי (ללא סוגריים)
+      const cleanContent = (msg.message_content || "").replace(/\{name\}/g, cleanName(lead.full_name));
 
       const sendRes = await fetch(`${railwayUrl}/message/send`, {
         method: "POST",
@@ -194,97 +141,65 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           sessionId,
           to: normalizePhone(lead.phone),
-          message: content,
-          mediaUrl: variation.media_url || campaign.global_media_url || null,
+          message: cleanContent,
+          mediaUrl: campaign.global_media_url || null,
           messageId: msg.id,
           delayMin: campaign.delay_min_seconds || 30,
           delayMax: campaign.delay_max_seconds || 120,
-          dailyLimit: campaign.daily_limit || 80,
           sendWindowStart: campaign.scheduled_time_start || "09:00",
           sendWindowEnd: campaign.scheduled_time_end || "18:00",
         }),
       });
 
-      let sendData;
-      try {
-        sendData = await sendRes.json();
-      } catch (parseErr) {
-        addLog("ERROR", "RESPONSE_PARSE_ERROR", "שגיאה בקריאת JSON", { phone: lead.phone, httpStatus: sendRes.status, parseError: parseErr.message }, "failed");
+      let sendData = {};
+      try { sendData = await sendRes.json(); } catch {}
+
+      if (sendRes.ok && sendData.queued !== false) {
+        // עדכן ל-sent מיד
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
-          status: "failed",
-          error_message: "שגיאה בעיבוד תשובה מServer",
-        });
-        messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
-        continue;
-      }
-
-      if (!sendRes.ok) {
-        const errorMsg = "כישלון שליחה ל-" + lead.phone;
-        addLog("WARN", "SEND_FAILED", errorMsg, { phone: lead.phone, httpStatus: sendRes.status, responseBody: sendData });
-        await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
-          status: "failed",
-          error_message: sendData.error || ("HTTP " + sendRes.status),
-        });
-        messages.push({ leadId: lead.id, messageId: msg.id, queued: false });
-        continue;
-      }
-
-      const queued = sendData && sendData.queued === true;
-      messages.push({ leadId: lead.id, messageId: msg.id, queued });
-      addLog("DEBUG", "SEND_QUEUED", "הודעה הוקעה", { phone: lead.phone, queued, variation: variation.label });
-    }
-
-    const successCount = messages.filter(m => m.queued).length;
-    const failedCount = messages.filter(m => !m.queued).length;
-    const finalStatus = failedCount === 0 ? "success" : successCount > 0 ? "partial" : "failed";
-    addLog("INFO", "BATCH_COMPLETE", "סיום שליחה", { queued: successCount, failed: failedCount, total: messages.length }, finalStatus);
-    
-    // שמור את כל ה-logs
-    try {
-      for (const log of logEntries) {
-        try {
-          await base44.asServiceRole.entities.CampaignLog.create({
-            campaign_id: campaignId,
-            level: log.level,
-            event: log.event,
-            message: log.message,
-            details: log.details,
-            status: log.status,
-            duration_ms: log.duration_ms,
-            source_function: "sendWABulk",
-            user_id: user.id,
-          });
-        } catch (logErr) {
-          console.error("Log save failed for event", log.event, ":", logErr.message);
-        }
-      }
-    } catch (logSaveErr) {
-      console.error("Failed to save logs batch:", logSaveErr.message);
-    }
-    
-    return Response.json({ ok: true, campaignId, queued: successCount, total: messages.length, messages });
-  } catch (error) {
-    addLog("CRITICAL", "EXCEPTION", "שגיאה קריטית", { errorMessage: error.message }, "failed");
-    
-    // שמור את ה-logs גם בכישלון
-    try {
-      for (const log of logEntries) {
-        await base44.asServiceRole.entities.CampaignLog.create({
-          campaign_id: campaignIdForError,
-          level: log.level,
-          event: log.event,
-          message: log.message,
-          details: log.details,
-          status: log.status,
-          duration_ms: log.duration_ms,
-          source_function: "sendWABulk",
-          stack_trace: log.level === "CRITICAL" ? error.stack : undefined,
+          status: "sent",
+          sent_at: new Date().toISOString(),
+          message_content: cleanContent,
         }).catch(() => null);
+        queuedCount++;
+      } else {
+        await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
+          status: "failed",
+          error_message: sendData.error || `HTTP ${sendRes.status}`,
+        }).catch(() => null);
+        failedCount++;
+        console.warn(`[FAIL] ${lead.phone}: HTTP ${sendRes.status}`, sendData);
       }
-    } catch (logErr) {
-      console.error("Failed to save error logs:", logErr);
     }
-    
+
+    // ── שלב 4: עדכן סטטיסטיקות הקמפיין ──
+    const updatedMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId }).catch(() => []);
+    const totalSent = updatedMessages.filter(m => ["sent","delivered","opened","replied"].includes(m.status)).length;
+    const totalFailed = updatedMessages.filter(m => m.status === "failed").length;
+    const totalPending = updatedMessages.filter(m => m.status === "pending").length;
+    const newStatus = totalPending === 0 ? "completed" : "running";
+
+    await base44.asServiceRole.entities.Campaign.update(campaignId, {
+      sent_count: totalSent,
+      failed_count: totalFailed,
+      status: newStatus,
+    }).catch(() => null);
+
+    console.log(`[DONE] queued=${queuedCount} failed=${failedCount} pending=${totalPending} status=${newStatus}`);
+
+    return Response.json({
+      ok: true,
+      campaignId,
+      queued: queuedCount,
+      failed: failedCount,
+      total: pendingMessages.length,
+      totalSent,
+      totalPending,
+      campaignStatus: newStatus,
+    });
+
+  } catch (error) {
+    console.error("[CRITICAL]", error.message, error.stack);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
