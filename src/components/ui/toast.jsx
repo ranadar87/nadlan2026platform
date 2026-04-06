@@ -41,10 +41,11 @@ const slideInLeftAnimation = `@keyframes slideInLeft { from { transform: transla
 
 
 
-const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
+const Toast = React.forwardRef(({ className, variant, open, ...props }, ref) => {
   return (
     <div
       ref={ref}
+      data-state={open ? "open" : "closed"}
       className={cn(toastVariants({ variant }), className)}
       {...props}
     />

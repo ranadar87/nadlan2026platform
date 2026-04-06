@@ -7,6 +7,7 @@ import LeadFilters from "../components/leads/LeadFilters";
 import LeadTable from "../components/leads/LeadTable";
 import LeadBulkActions from "../components/leads/LeadBulkActions";
 import LeadEditDialog from "../components/leads/LeadEditDialog";
+import LeadDetailModal from "../components/leads/LeadDetailModal";
 
 export default function Leads() {
   const { toast } = useToast();
@@ -15,6 +16,7 @@ export default function Leads() {
   const [filters, setFilters] = useState({});
   const [selectedIds, setSelectedIds] = useState([]);
   const [editLead, setEditLead] = useState(null);
+  const [detailLead, setDetailLead] = useState(null);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -63,8 +65,9 @@ export default function Leads() {
   };
 
   const handleSaveLead = async (data) => {
-    if (editLead?.id) {
-      await base44.entities.Lead.update(editLead.id, data);
+    const id = data.id || editLead?.id;
+    if (id) {
+      await base44.entities.Lead.update(id, data);
       toast({ title: "הליד עודכן" });
     } else {
       await base44.entities.Lead.create(data);
@@ -92,9 +95,16 @@ export default function Leads() {
           {[1,2,3,4,5].map(i => <div key={i} className="h-14 bg-card border border-border rounded-lg animate-pulse" />)}
         </div>
       ) : (
-        <LeadTable leads={filteredLeads} selectedIds={selectedIds} onSelectChange={setSelectedIds} onEdit={setEditLead} onDelete={handleDelete} onStatusChange={handleStatusChange} />
+        <LeadTable leads={filteredLeads} selectedIds={selectedIds} onSelectChange={setSelectedIds} onEdit={setEditLead} onDelete={handleDelete} onStatusChange={handleStatusChange} onOpenDetail={setDetailLead} />
       )}
       <LeadEditDialog open={!!editLead} onClose={() => setEditLead(null)} lead={editLead} onSave={handleSaveLead} />
+      <LeadDetailModal
+        lead={detailLead}
+        open={!!detailLead}
+        onClose={() => setDetailLead(null)}
+        onStatusChange={async (lead, status) => { await handleStatusChange(lead, status); setDetailLead(prev => prev ? { ...prev, status } : null); }}
+        onSave={async (data) => { await handleSaveLead(data); setDetailLead(prev => prev ? { ...prev, ...data } : null); }}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import CampaignStep1 from "../components/campaigns/CampaignStep1";
 import CampaignStep2 from "../components/campaigns/CampaignStep2";
 import CampaignStep3 from "../components/campaigns/CampaignStep3";
 import CampaignStep4 from "../components/campaigns/CampaignStep4";
-import { ChevronRight, ChevronLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Loader2, CheckCircle2, Smartphone, AlertTriangle } from "lucide-react";
 
 const steps = ["סוג קמפיין", "יצירת הודעה", "קהל יעד", "תזמון ושליחה"];
 
@@ -25,6 +25,14 @@ export default function CampaignNew() {
     send_once_per_contact: true, restrict_to_new_leads: false, require_phone_il: true,
     global_media_url: "", add_to_contact_group: "",
   });
+
+  const [waConnected, setWaConnected] = useState(null); // null=checking, true/false
+
+  useEffect(() => {
+    base44.functions.invoke("getWAStatus", {})
+      .then(res => setWaConnected(res.data?.connected === true))
+      .catch(() => setWaConnected(false));
+  }, []);
 
   const update = (key, value) => setCampaign(prev => ({ ...prev, [key]: value }));
 
@@ -45,7 +53,11 @@ export default function CampaignNew() {
   };
 
   const handleCreate = async () => {
-    if (!canProceed()) return;
+    // בדיקת חיבור WhatsApp לפני יצירת קמפיין
+    if (campaign.type === "whatsapp" && !waConnected) {
+      toast({ title: "⚠️ WhatsApp לא מחובר", description: "יש לחבר WhatsApp בהגדרות לפני שליחת קמפיין", variant: "destructive", duration: 6000 });
+      return;
+    }
     setSaving(true);
     try {
       const newCampaign = await base44.entities.Campaign.create({
@@ -91,10 +103,19 @@ export default function CampaignNew() {
 
   return (
     <div className="max-w-3xl space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">קמפיין חדש</h1>
-        <p className="text-xs text-muted-foreground mt-1">{campaign.name || "ללא שם"} • {campaign.target_lead_ids.length} נמענים</p>
-      </div>
+      {/* WhatsApp warning banner */}
+      {campaign.type === "whatsapp" && waConnected === false && (
+        <div className="flex items-center gap-3 bg-warning/10 border border-warning/30 rounded-xl p-4">
+          <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-foreground">WhatsApp לא מחובר</p>
+            <p className="text-xs text-muted-foreground">כדי לשלוח קמפיין WhatsApp יש לחבר תחילה את החשבון שלך בהגדרות</p>
+          </div>
+          <Button size="sm" variant="outline" className="gap-2 border-warning/40 text-warning hover:bg-warning/10" onClick={() => navigate("/settings")}>
+            <Smartphone className="w-3.5 h-3.5" />חבר עכשיו
+          </Button>
+        </div>
+      )}
 
       {/* Step progress */}
       <div className="flex items-center gap-2">

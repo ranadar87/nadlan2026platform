@@ -78,7 +78,7 @@ export default function RecentActivity() {
                 {act.sub && <p className="text-xs text-muted-foreground">{act.sub}</p>}
               </div>
               <p className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-                {moment(act.time).fromNow()}
+                {moment(act.time).locale("he").fromNow()}
               </p>
             </div>
           ))}
