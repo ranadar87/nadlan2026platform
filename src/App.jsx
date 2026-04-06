@@ -19,6 +19,10 @@ import Onboarding from './pages/Onboarding';
 import AdminDashboard from './pages/AdminDashboard';
 import Billing from './pages/Billing';
 import LandingPage from './pages/LandingPage';
+import PaymentPlansManager from './pages/admin/PaymentPlansManager';
+import Pricing from './pages/Pricing';
+import Checkout from './pages/Checkout';
+import PurchaseSuccess from './pages/PurchaseSuccess';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -49,6 +53,9 @@ const AuthenticatedApp = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/purchase-success" element={<PurchaseSuccess />} />
       
       {/* Authenticated routes */}
       <Route element={<Layout />}>
@@ -63,8 +70,8 @@ const AuthenticatedApp = () => {
         <Route path="/campaigns/log" element={<CampaignLog />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/payment-plans" element={<PaymentPlansManager />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
