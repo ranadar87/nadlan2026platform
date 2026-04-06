@@ -26,7 +26,7 @@ export default function CampaignNew() {
     global_media_url: "", add_to_contact_group: "",
   });
 
-  const [waConnected, setWaConnected] = useState(null); // null=checking, true/false
+  const [waConnected, setWaConnected] = useState(null);
 
   useEffect(() => {
     base44.functions.invoke("getWAStatus", {})
@@ -38,15 +38,12 @@ export default function CampaignNew() {
 
   const canProceed = () => {
     if (step === 0) {
-      return campaign.name?.trim() && campaign.type && campaign.message_variations?.length > 0;
+      return campaign.name?.trim() && campaign.type;
     }
     if (step === 1) {
-      return campaign.target_lead_ids?.length > 0;
+      return campaign.message_variations?.length > 0;
     }
     if (step === 2) {
-      return true;
-    }
-    if (step === 3) {
       return campaign.target_lead_ids?.length > 0;
     }
     return true;
@@ -83,7 +80,7 @@ export default function CampaignNew() {
           } else if (queued > 0) {
             toast({ title: "⚠️ שליחה חלקית", description: `${queued} הודעות שלחו, ${failed} פשלו` });
           } else {
-           toast({ title: "❌ שגיאה בשליחה", description: `בדוק את הלוגים שרוצים מתוך הקמפיין`, variant: "destructive" });
+            toast({ title: "❌ שגיאה בשליחה", description: `בדוק את הלוגים שרוצים מתוך הקמפיין`, variant: "destructive" });
           }
         } catch (sendError) {
           console.error("sendWABulk error:", sendError);
@@ -151,7 +148,7 @@ export default function CampaignNew() {
           <ChevronRight className="w-4 h-4" />הקודם
         </Button>
         {step < steps.length - 1 ? (
-          <Button className="gap-2" onClick={nextStep}>
+          <Button className="gap-2" onClick={nextStep} disabled={!canProceed()}>
             הבא<ChevronLeft className="w-4 h-4" />
           </Button>
         ) : (
