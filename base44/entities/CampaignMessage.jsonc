@@ -44,6 +44,7 @@
       "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",
       "enum": [
         "pending",
+        "sending",
         "sent",
         "delivered",
         "opened",
@@ -51,6 +52,10 @@
         "failed"
       ],
       "default": "pending"
+    },
+    "sending_started_at": {
+      "type": "string",
+      "title": "\u05d6\u05de\u05df \u05d4\u05ea\u05d7\u05dc\u05ea \u05e9\u05dc\u05d9\u05d7\u05d4"
     },
     "sent_at": {
       "type": "string",

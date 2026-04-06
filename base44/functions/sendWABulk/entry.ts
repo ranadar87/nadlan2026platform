@@ -67,15 +67,12 @@ Deno.serve(async (req) => {
         .replace(/\{name\}/g, cleanName(lead.full_name))
         .replace(/\{phone\}/g, normalizePhone(lead.phone));
 
-      // הודעה ראשונה מיד, שאר עם delay אקראי מצטבר
-      const scheduledAt = i === 0
-        ? now.toISOString()
-        : new Date(now.getTime() + cumulativeDelay * 1000).toISOString();
+      // FIX: חשב scheduledAt לפי cumulativeDelay הנוכחי
+      const scheduledAt = new Date(now.getTime() + cumulativeDelay * 1000).toISOString();
 
-      if (i > 0) {
-        const jitter = Math.floor(Math.random() * (delayMax - delayMin)) + delayMin;
-        cumulativeDelay += jitter;
-      }
+      // FIX: הוסף delay לפני החישוב של ההודעה הבאה
+      const jitter = Math.floor(Math.random() * (delayMax - delayMin)) + delayMin;
+      cumulativeDelay += jitter;
 
       const msg = await base44.asServiceRole.entities.CampaignMessage.create({
         campaign_id: campaignId,

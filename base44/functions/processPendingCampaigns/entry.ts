@@ -25,6 +25,19 @@ Deno.serve(async (req) => {
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
 
+    // ── 0. שחרר הודעות תקועות ב-sending יותר מ-2 דקות ──
+    const stuckTime = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
+    const stuckMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ status: "sending" });
+    for (const stuck of stuckMessages) {
+      if (stuck.sending_started_at && stuck.sending_started_at < stuckTime) {
+        await base44.asServiceRole.entities.CampaignMessage.update(stuck.id, {
+          status: "pending",
+          sending_started_at: null,
+        }).catch(() => null);
+        console.log(`[UNSTUCK] Released stuck message: ${stuck.id}`);
+      }
+    }
+
     // ── 1. מצא את כל הודעות ה-pending ──
     const pendingMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ status: "pending" });
 
@@ -39,39 +52,28 @@ Deno.serve(async (req) => {
       return ta - tb;
     });
 
+    // FIX: מצא את כל ההודעות שהגיע זמנן (עד 3 בריצה — מנע overload)
+    const dueMessages = pendingMessages.filter(msg => {
+      if (!msg.scheduled_at) return true;
+      return new Date(msg.scheduled_at) <= now;
+    }).slice(0, 3);
+
     let sent = 0;
     let skipped = 0;
     let failed = 0;
 
-    for (const msg of pendingMessages) {
+    for (const msg of dueMessages) {
 
       // ── 2. טען קמפיין ──
       const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: msg.campaign_id });
       const campaign = campaigns[0];
 
-      if (!campaign || campaign.status === "paused" || campaign.status === "completed" || campaign.status === "stopped") {
+      if (!campaign || ["paused","completed","stopped"].includes(campaign.status)) {
         skipped++;
         continue;
       }
 
-      // ── 3. בדוק scheduled_at תחילה — אם קבוע, בדוק אם הגיע הזמן ──
-      if (msg.scheduled_at) {
-        const scheduledAt = new Date(msg.scheduled_at);
-        if (scheduledAt > now) {
-          skipped++;
-          continue;
-        }
-      } else {
-        // אם לא קבוע, בדוק חלון שעות כללי ──
-        const windowStart = campaign.scheduled_time_start || "09:00";
-        const windowEnd = campaign.scheduled_time_end || "18:00";
-        if (currentTimeStr < windowStart || currentTimeStr > windowEnd) {
-          skipped++;
-          continue;
-        }
-      }
-
-      // ── 4. בדוק מגבלה יומית (קמפיין + HARD_LIMIT) ──
+      // ── 3. בדוק מגבלה יומית (קמפיין + HARD_LIMIT) ──
       const campaignDailyLimit = Math.min(campaign.daily_limit || 50, HARD_DAILY_LIMIT);
 
       const allCampaignMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaign.id });
@@ -82,45 +84,36 @@ Deno.serve(async (req) => {
       }).length;
 
       if (sentToday >= campaignDailyLimit) {
-        console.log(`[DAILY_LIMIT] Campaign ${campaign.id}: ${sentToday}/${campaignDailyLimit} today`);
         skipped++;
         continue;
       }
 
-      // ── 6. בדוק חיבור WA של בעל הקמפיין ──
+      // ── 4. בדוק חיבור WA של בעל הקמפיין ──
       const ownerId = campaign.owner_user_id;
-      if (!ownerId) {
-        console.warn(`[NO_OWNER_ID] Campaign ${campaign.id}: missing owner_user_id`);
-        skipped++;
-        continue;
-      }
+      if (!ownerId) { skipped++; continue; }
+
       const sessionId = `user_${ownerId}`;
       const sessionRes = await fetch(`${railwayUrl}/session/status/${sessionId}`, {
         headers: { Authorization: `Bearer ${railwaySecret}` },
         signal: AbortSignal.timeout(5000),
       }).catch(() => null);
 
-      if (!sessionRes?.ok) {
-        console.warn(`[NO_SESSION] Campaign ${campaign.id}: WA session not found`);
-        skipped++;
-        continue;
-      }
-
+      if (!sessionRes?.ok) { skipped++; continue; }
       const sessionData = await sessionRes.json().catch(() => ({}));
-      if (sessionData.status !== "connected") {
-        console.warn(`[DISCONNECTED] Campaign ${campaign.id}: WA not connected`);
-        skipped++;
-        continue;
-      }
+      if (sessionData.status !== "connected") { skipped++; continue; }
 
-      // ── 7. שלח את ההודעה ──
+      // ── 5. LOCK: סמן כ-"sending" לפני השליחה — מנע double-send ──
+      await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
+        status: "sending",
+        sending_started_at: nowISO,
+      }).catch(() => null);
+
+      // ── 6. שלח את ההודעה ──
       const sendRes = await fetch(`${railwayUrl}/message/send`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${railwaySecret}`,
           "Content-Type": "application/json",
-          "X-Webhook-Url": webhookUrl,
-          "X-Webhook-Secret": railwaySecret,
         },
         body: JSON.stringify({
           sessionId,
@@ -128,6 +121,7 @@ Deno.serve(async (req) => {
           message: msg.message_content,
           messageId: msg.id,
           mediaUrl: msg.media_url || null,
+          webhookUrl,
         }),
         signal: AbortSignal.timeout(15000),
       }).catch(() => null);
@@ -136,43 +130,35 @@ Deno.serve(async (req) => {
       try { sendData = await sendRes?.json(); } catch {}
 
       if (sendRes?.ok) {
-        // ── 8. עדכן ל-sent ──
+        // ── 7. עדכן ל-sent ──
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
           status: "sent",
           sent_at: nowISO,
+          sending_started_at: null,
         }).catch(() => null);
-
         sent++;
-        console.log(`[SENT] ${msg.lead_phone} (campaign ${campaign.id})`);
-
-        // ── 9. עדכן counters בקמפיין ──
-        const freshMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaign.id });
-        const sentCount = freshMessages.filter(m => ["sent","delivered","opened","replied"].includes(m.status)).length;
-        const pendingCount = freshMessages.filter(m => m.status === "pending").length;
-        const failedCount = freshMessages.filter(m => m.status === "failed").length;
-
-        await base44.asServiceRole.entities.Campaign.update(campaign.id, {
-          sent_count: sentCount,
-          failed_count: failedCount,
-          status: pendingCount === 0 ? "completed" : "running",
-        }).catch(() => null);
-
-        if (pendingCount === 0) {
-          console.log(`[COMPLETED] Campaign ${campaign.id} finished`);
-        }
-
+        console.log(`[SENT] ${msg.lead_phone}`);
       } else {
+        // ── 7. עדכן ל-failed ──
         await base44.asServiceRole.entities.CampaignMessage.update(msg.id, {
           status: "failed",
           error_message: sendData?.error || `HTTP ${sendRes?.status || 'timeout'}`,
+          sending_started_at: null,
         }).catch(() => null);
-
         failed++;
-        console.warn(`[FAIL] ${msg.lead_phone}: ${sendData?.error || 'no response'}`);
       }
 
-      // שלח רק הודעה אחת בכל ריצה — ה-Cron יטפל בשאר
-      break;
+      // ── 8. עדכן counters בקמפיין ──
+      const freshMsgs = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaign.id });
+      const sentCount = freshMsgs.filter(m => ["sent","delivered","opened","replied"].includes(m.status)).length;
+      const pendingCount = freshMsgs.filter(m => ["pending","sending"].includes(m.status)).length;
+      const failedCount = freshMsgs.filter(m => m.status === "failed").length;
+
+      await base44.asServiceRole.entities.Campaign.update(campaign.id, {
+        sent_count: sentCount,
+        failed_count: failedCount,
+        status: pendingCount === 0 ? "completed" : "running",
+      }).catch(() => null);
     }
 
     return Response.json({

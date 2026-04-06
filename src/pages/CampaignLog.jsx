@@ -10,6 +10,7 @@ moment.locale("he");
 
 const statusConfig = {
   pending: { label: "ממתין", color: "bg-muted text-muted-foreground", icon: Clock },
+  sending: { label: "שולח...", color: "bg-yellow-100 text-yellow-700", icon: Send },
   sent: { label: "נשלח", color: "bg-info/15 text-info", icon: Send },
   delivered: { label: "נמסר", color: "bg-success/15 text-success", icon: CheckCircle },
   opened: { label: "נפתח", color: "bg-primary/15 text-primary", icon: Eye },
@@ -78,8 +79,6 @@ export default function CampaignLog() {
     return () => clearInterval(intervalRef.current);
   }, [isLive, loadData]);
 
-
-
   const filtered = messages.filter(m => {
     const matchSearch = !search || (m.lead_name || "").includes(search) || (m.lead_phone || "").includes(search);
     const matchStatus = filterStatus === "all" || m.status === filterStatus;
@@ -88,12 +87,12 @@ export default function CampaignLog() {
 
   const stats = {
     total: messages.length,
-    sent: messages.filter(m => m.status !== "pending" && m.status !== "failed").length,
+    sent: messages.filter(m => !["pending", "failed", "sending"].includes(m.status)).length,
     delivered: messages.filter(m => ["delivered","opened","replied"].includes(m.status)).length,
     opened: messages.filter(m => ["opened","replied"].includes(m.status)).length,
     replied: messages.filter(m => m.status === "replied").length,
     failed: messages.filter(m => m.status === "failed").length,
-    pending: messages.filter(m => m.status === "pending").length,
+    pending: messages.filter(m => ["pending","sending"].includes(m.status)).length,
   };
 
   return (
