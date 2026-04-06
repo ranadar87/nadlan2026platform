@@ -74,19 +74,9 @@ export default function Topbar() {
   return (
     <>
     <HelpCenter open={showHelp} onClose={() => setShowHelp(false)} />
-    <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-8 gap-4" style={{ fontFamily: "'Assistant', sans-serif" }}>
-      {/* Left: user info + WA status */}
-      <div className="flex items-center gap-3 min-w-fit">
-        <Link to="/scrape" data-tour="scrape-btn">
-          <Button variant="outline" size="sm" className="gap-2 h-9 px-4 text-sm font-medium border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 rounded-xl transition-all duration-200">
-            <Search className="w-4 h-4" />
-            שאב לידים
-          </Button>
-        </Link>
-      </div>
-
-      {/* Right: actions + icons */}
-      <div className="flex items-center gap-3 ml-auto">
+    <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center px-8 gap-4" style={{ fontFamily: "'Assistant', sans-serif" }}>
+      {/* Center: actions */}
+      <div className="flex items-center gap-3 mx-auto">
         <Link to="/scrape" data-tour="scrape-btn">
           <Button variant="outline" size="sm" className="gap-2 h-9 px-4 text-sm font-medium border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 rounded-xl transition-all duration-200">
             <Search className="w-4 h-4" />
@@ -124,6 +114,10 @@ export default function Topbar() {
             </>
           )}
         </div>
+      </div>
+
+      {/* Left (far left): user info icons */}
+      <div className="flex items-center gap-3 ml-auto">
         <button onClick={() => setShowHelp(true)} title="מרכז תמיכה" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
           <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
         </button>
