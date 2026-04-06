@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Megaphone, Pause, Play, Square, Trash2, FileText, Edit } from "lucide-react";
+import { Plus, Megaphone, Pause, Play, Square, Trash2, FileText, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
@@ -23,27 +23,26 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const pollRef = useRef(null);
 
   const loadCampaigns = async () => {
     const data = await base44.entities.Campaign.list("-created_date", 100);
     setCampaigns(data);
     setLoading(false);
+    // אם יש קמפיין פעיל — רענן אוטומטית כל 15 שניות
+    const hasRunning = data.some(c => c.status === "running");
+    if (hasRunning && !pollRef.current) {
+      pollRef.current = setInterval(() => loadCampaigns(), 15000);
+    } else if (!hasRunning && pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
   };
 
-  useEffect(() => { loadCampaigns(); }, []);
-
-  const handleTogglePause = async (campaign) => {
-    const newStatus = campaign.status === "paused" ? "running" : "paused";
-    await base44.entities.Campaign.update(campaign.id, { status: newStatus });
-    toast({ title: newStatus === "paused" ? "הקמפיין הושהה" : "הקמפיין חודש" });
+  useEffect(() => {
     loadCampaigns();
-  };
-
-  const handleStop = async (campaign) => {
-    await base44.entities.Campaign.update(campaign.id, { status: "stopped" });
-    toast({ title: "הקמפיין הופסק" });
-    loadCampaigns();
-  };
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, []);
 
   const handleDelete = async (campaign) => {
     if (!window.confirm(`למחוק את הקמפיין "${campaign.name}"?`)) return;

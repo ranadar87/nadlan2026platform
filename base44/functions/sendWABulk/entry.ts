@@ -111,16 +111,41 @@ Deno.serve(async (req) => {
 
     // נרמל מספרי טלפון לפורמט בינלאומי
     const normalizePhone = (phone) => {
-      let p = (phone || "").replace(/[\-\s]/g, ""); // הסר מקפים ורווחים
-      if (p.startsWith("0")) p = "972" + p.slice(1); // המר 05X → 9725X
+      let p = (phone || "").replace(/[\-\s]/g, "");
+      if (p.startsWith("0")) p = "972" + p.slice(1);
       return p;
     };
 
+    // ── הגבלה יומית מוחלטת: מקסימום 50 הודעות/יום ────────────────────────
+    const HARD_DAILY_LIMIT = 50;
+    const userDailyLimit = Math.min(campaign.daily_limit || 50, HARD_DAILY_LIMIT);
+
+    // בדוק כמה הודעות נשלחו היום
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayMessages = await base44.asServiceRole.entities.CampaignMessage.filter({
+      campaign_id: campaignId,
+      status: "sent",
+    }).then(msgs => msgs.filter(m => new Date(m.sent_at || m.created_date) >= todayStart)).catch(() => []);
+    const sentTodayCount = todayMessages.length;
+    const remainingToday = Math.max(0, userDailyLimit - sentTodayCount);
+
+    addLog("INFO", "DAILY_LIMIT_CHECK", "בדיקת מגבלה יומית", { sentToday: sentTodayCount, limit: userDailyLimit, remaining: remainingToday });
+
+    if (remainingToday === 0) {
+      addLog("WARN", "DAILY_LIMIT_REACHED", "מגבלת היום הגיעה — לא נשלח כלום", {}, "failed");
+      return Response.json({ error: `הגעת למגבלת ${userDailyLimit} הודעות ליום. נסה מחר.` }, { status: 429 });
+    }
+
+    // חתוך את רשימת השליחה לפי המותר להיום
+    const leadsForToday = leadsToSend.slice(0, remainingToday);
+    addLog("INFO", "TODAY_BATCH", "קביעת אצוות היום", { total: leadsToSend.length, todayBatch: leadsForToday.length, remaining: remainingToday });
+
     const messages = [];
     addLog("INFO", "BATCH_START", "התחלת שליחה",
-      { totalLeads: leadsToSend.length, totalVariations: variations.length });
-    for (let i = 0; i < leadsToSend.length; i++) {
-      const lead = leadsToSend[i];
+      { totalLeads: leadsForToday.length, totalVariations: variations.length });
+    for (let i = 0; i < leadsForToday.length; i++) {
+      const lead = leadsForToday[i];
       const variation = variations[i % variations.length];
       const content = (variation.content || "").replace("{name}", lead.full_name || "");
 

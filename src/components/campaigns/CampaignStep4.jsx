@@ -3,25 +3,41 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, Clock, Users, Zap, Calendar, AlertTriangle, UserCheck, Timer } from "lucide-react";
+import { Shield, Clock, Users, Zap, Calendar, AlertTriangle, UserCheck, Timer, Bot } from "lucide-react";
 import moment from "moment";
+
+const SAFE_DAILY_MAX = 50;
 
 export default function CampaignStep4({ campaign, update }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [autoSafe, setAutoSafe] = useState(false);
 
   const recipientsCount = campaign.target_lead_ids?.length || 0;
-  const daysEstimate = recipientsCount > 0 ? Math.ceil(recipientsCount / (campaign.daily_limit || 80)) : null;
+  const effectiveDailyLimit = Math.min(campaign.daily_limit || 50, SAFE_DAILY_MAX);
+  const daysEstimate = recipientsCount > 0 ? Math.ceil(recipientsCount / effectiveDailyLimit) : null;
+
+  // חישוב אוטומטי: 50 הודעות ב-9 שעות = כל 10.8 דקות
+  const handleAutoSafe = (checked) => {
+    setAutoSafe(checked);
+    if (checked) {
+      update("daily_limit", 50);
+      update("delay_min_seconds", 600); // 10 דקות
+      update("delay_max_seconds", 900); // 15 דקות
+      update("scheduled_time_start", "09:00");
+      update("scheduled_time_end", "18:00");
+    }
+  };
 
   const getScheduledSummary = () => {
-    if (campaign.start_immediately) return "ישלח מיידית עם לחיצה על ״שגר קמפיין״";
+    if (campaign.start_immediately) return "ישלח מיידית עם לחיצה על ׳שגר קמפיין׳";
     if (!campaign.scheduled_date) return "לא נקבע תאריך תזמון";
     const date = moment(campaign.scheduled_date).format("dddd, D בMMMM YYYY");
     const time = campaign.scheduled_time_start || "09:00";
     return `יתחיל ב${date} בשעה ${time}`;
   };
 
-  const delayMinMinutes = Math.round((campaign.delay_min_seconds || 30) / 60 * 10) / 10;
-  const delayMaxMinutes = Math.round((campaign.delay_max_seconds || 120) / 60 * 10) / 10;
+  const delayMinMinutes = Math.round((campaign.delay_min_seconds || 600) / 60 * 10) / 10;
+  const delayMaxMinutes = Math.round((campaign.delay_max_seconds || 900) / 60 * 10) / 10;
 
   return (
     <div className="space-y-6">
@@ -96,18 +112,36 @@ export default function CampaignStep4({ campaign, update }) {
         </div>
       )}
 
+      {/* Auto Safe Mode */}
+      <div className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${autoSafe ? "border-success bg-success/5" : "border-border bg-secondary/40"}`}
+        onClick={() => handleAutoSafe(!autoSafe)}>
+        <Bot className={`w-5 h-5 mt-0.5 flex-shrink-0 ${autoSafe ? "text-success" : "text-muted-foreground"}`} />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-foreground">🤖 חישוב אוטומטי — מצב בטוח</p>
+          <p className="text-xs text-muted-foreground mt-0.5">המערכת תחשב אוטומטית: 50 הודעות/יום, השהייה 10-15 דקות בין הודעות, שעות 09:00–18:00</p>
+        </div>
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${autoSafe ? "border-success bg-success" : "border-muted-foreground"}`}>
+          {autoSafe && <span className="text-white text-[10px] font-bold">✓</span>}
+        </div>
+      </div>
+
       {/* Delays & limits */}
-      <div className="space-y-4">
+      <div className={`space-y-4 ${autoSafe ? "opacity-50 pointer-events-none" : ""}`}>
         <div>
           <div className="flex items-center justify-between mb-2">
             <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Timer className="w-3.5 h-3.5" /> מגבלה יומית
             </Label>
-            <span className="text-xs font-bold text-primary">{campaign.daily_limit || 80} הודעות/יום</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-primary">{effectiveDailyLimit} הודעות/יום</span>
+              {(campaign.daily_limit || 50) > SAFE_DAILY_MAX && (
+                <span className="text-[10px] text-destructive font-medium bg-destructive/10 px-1.5 py-0.5 rounded">הוגבל ל-{SAFE_DAILY_MAX}</span>
+              )}
+            </div>
           </div>
-          <Slider value={[campaign.daily_limit || 80]} onValueChange={([v]) => update("daily_limit", v)} min={10} max={200} step={10} className="mt-2" />
+          <Slider value={[Math.min(campaign.daily_limit || 50, SAFE_DAILY_MAX)]} onValueChange={([v]) => update("daily_limit", Math.min(v, SAFE_DAILY_MAX))} min={10} max={50} step={5} className="mt-2" />
           <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-            <span>10</span><span>בטוח: 50-80</span><span>200</span>
+            <span>10</span><span className="text-success font-medium">מקסימום בטוח: 50/יום</span><span>50</span>
           </div>
         </div>
 
@@ -118,17 +152,18 @@ export default function CampaignStep4({ campaign, update }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-[10px] text-muted-foreground">מינימום (שניות)</Label>
-              <Input type="number" value={campaign.delay_min_seconds || 30} onChange={e => update("delay_min_seconds", Number(e.target.value))} className="bg-secondary border-border mt-1" dir="ltr" min={5} />
+              <Input type="number" value={campaign.delay_min_seconds || 600} onChange={e => update("delay_min_seconds", Number(e.target.value))} className="bg-secondary border-border mt-1" dir="ltr" min={60} />
               <p className="text-[10px] text-muted-foreground mt-1">≈ {delayMinMinutes} דקות</p>
             </div>
             <div>
               <Label className="text-[10px] text-muted-foreground">מקסימום (שניות)</Label>
-              <Input type="number" value={campaign.delay_max_seconds || 120} onChange={e => update("delay_max_seconds", Number(e.target.value))} className="bg-secondary border-border mt-1" dir="ltr" min={10} />
+              <Input type="number" value={campaign.delay_max_seconds || 900} onChange={e => update("delay_max_seconds", Number(e.target.value))} className="bg-secondary border-border mt-1" dir="ltr" min={120} />
               <p className="text-[10px] text-muted-foreground mt-1">≈ {delayMaxMinutes} דקות</p>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 bg-secondary/60 rounded-lg px-3 py-2">
-            💡 ניתן להגדיר למשל 1200 שניות (20 דקות) בין כל שליחה לבטיחות גבוהה יותר
+          <p className="text-[10px] text-warning mt-2 bg-warning/8 rounded-lg px-3 py-2 flex items-start gap-1.5">
+            <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+            מינימום מומלץ: 600 שניות (10 דקות) כדי להימנע מחסימת חשבון
           </p>
         </div>
       </div>
