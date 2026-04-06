@@ -18,6 +18,7 @@ import CampaignLog from './pages/CampaignLog';
 import Onboarding from './pages/Onboarding';
 import AdminDashboard from './pages/AdminDashboard';
 import Billing from './pages/Billing';
+import LandingPage from './pages/LandingPage';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -46,8 +47,12 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<LandingPage />} />
+      
+      {/* Authenticated routes */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/scrape" element={<Scrape />} />
         <Route path="/campaigns" element={<Campaigns />} />
@@ -59,6 +64,7 @@ const AuthenticatedApp = () => {
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/billing" element={<Billing />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

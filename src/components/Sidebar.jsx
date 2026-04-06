@@ -13,7 +13,7 @@ const mainTabs = [
 
 const navByTab = {
   leads: [
-    { path: "/", label: "דשבורד", icon: LayoutDashboard },
+    { path: "/dashboard", label: "דשבורד", icon: LayoutDashboard },
     { path: "/leads", label: "לידים", icon: Users },
     { path: "/scrape", label: "שאיבת לידים", icon: Search },
     { path: "/campaigns", label: "קמפיינים", icon: Megaphone },
@@ -53,7 +53,7 @@ export default function Sidebar() {
   return (
     <aside className="w-[220px] min-w-[220px] bg-white shadow-sidebar border-l border-border flex flex-col" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* Logo */}
-      <Link to="/" className="px-5 py-5 border-b border-border flex items-center gap-3 hover:bg-secondary/30 transition-colors">
+      <Link to="/dashboard" className="px-5 py-5 border-b border-border flex items-center gap-3 hover:bg-secondary/30 transition-colors">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center shadow-glow">
           <Zap className="w-5 h-5 text-white" />
         </div>
@@ -80,8 +80,8 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path ||
-            (item.path !== "/" && location.pathname.startsWith(item.path));
+           const isActive = location.pathname === item.path ||
+            (item.path !== "/dashboard" && location.pathname.startsWith(item.path));
           const Icon = item.icon;
           return (
             <Link key={item.path} to={item.path}
