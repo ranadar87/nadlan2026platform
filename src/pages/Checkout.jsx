@@ -19,6 +19,7 @@ export default function Checkout() {
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [error, setError] = useState("");
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -34,6 +35,13 @@ export default function Checkout() {
         return;
       }
       setPlan(plans[0]);
+      
+      // בדוק אם test_mode דלוק
+      const configs = await base44.entities.PaymeConfig.filter({ config_key: 'global' });
+      if (configs.length > 0 && configs[0].test_mode) {
+        setTestMode(true);
+      }
+      
       setLoading(false);
     };
     load();
@@ -89,6 +97,19 @@ export default function Checkout() {
           <h1 className="text-3xl font-bold text-foreground">אישור רכישה</h1>
           <p className="text-muted-foreground mt-1">אימות פרטים וסיום הרכישה</p>
         </div>
+
+        {/* Test Mode Alert */}
+        {testMode && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-warning/10 border border-warning/20">
+            <AlertCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold text-warning">⚠️ מצב בדיקה פעיל</p>
+              <p className="text-sm text-warning/80 mt-1">
+                המחיר בתחתית יהיה מחיר בדיקה (בדרך כלל 5₪). התשלום אמיתי!
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Order Summary */}
         <div className="bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl border border-primary/10 p-6">

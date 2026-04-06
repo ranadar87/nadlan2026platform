@@ -28,7 +28,12 @@ Deno.serve(async (req) => {
     const config = configs.length > 0 ? configs[0] : {};
 
     const actualBillingCycle = billing_cycle || 'monthly';
-    const price = actualBillingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    let price = actualBillingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    
+    // אם test_mode דלוק, השתמש במחיר בדיקה
+    if (config.test_mode) {
+      price = config.test_price || 5;
+    }
     const trialDays = plan.trial_days || 14;
 
     const paymeKey = Deno.env.get('PAYME_SELLER_ID');
@@ -72,7 +77,9 @@ const trialEndsAt = new Date();
     return Response.json({
       ok: true,
       subscription,
-      message: `Subscription created. Trial ends at ${trialEndsAt.toLocaleDateString('he-IL')}`,
+      testMode: config.test_mode,
+      testPrice: config.test_mode ? (config.test_price || 5) : null,
+      message: `Subscription created. Trial ends at ${trialEndsAt.toLocaleDateString('he-IL')}. ${config.test_mode ? '⚠️ TEST MODE - Price: ' + (config.test_price || 5) + '₪' : ''}`,
     });
 
   } catch (error) {

@@ -69,10 +69,14 @@ export default function PaymentPlansManager() {
 
   const handleUpdateConfig = async (field, value) => {
     if (!config?.id) return;
-    const updated = { ...config, [field]: value };
-    await base44.entities.PaymeConfig.update(config.id, updated);
-    setConfig(updated);
-    toast({ title: "הגדרות עודכנו" });
+    try {
+      const updated = { ...config, [field]: value };
+      await base44.entities.PaymeConfig.update(config.id, updated);
+      setConfig(updated);
+      toast({ title: "הגדרות עודכנו" });
+    } catch (e) {
+      toast({ title: "שגיאה", description: e.message, variant: "destructive" });
+    }
   };
 
   if (!user || user.role !== "admin") {
@@ -121,47 +125,88 @@ export default function PaymentPlansManager() {
 
       {/* PaymeConfig */}
       {config && (
-        <div className="bg-white rounded-xl border border-border p-6">
-          <h2 className="text-lg font-bold text-foreground mb-4">הגדרות PayMe</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold">Seller ID</label>
-              <Input 
-                value={config.payme_seller_id || ''} 
-                onChange={e => setConfig({...config, payme_seller_id: e.target.value})} 
-                placeholder="מזהה מוכר PayMe"
-                className="mt-1 bg-secondary"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold">Webhook URL</label>
-              <Input 
-                value={config.webhook_url || ''} 
-                onChange={e => setConfig({...config, webhook_url: e.target.value})} 
-                placeholder="https://..."
-                className="mt-1 bg-secondary"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold">ניסיונות חיוב חוזר מקסימלי</label>
-              <Input 
-                type="number"
-                value={config.retry_max_attempts || 3} 
-                onChange={e => setConfig({...config, retry_max_attempts: parseInt(e.target.value)})} 
-                className="mt-1 bg-secondary"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground font-semibold">הפרש בין ניסיונות (שעות)</label>
-              <Input 
-                type="number"
-                value={config.retry_delay_hours || 24} 
-                onChange={e => setConfig({...config, retry_delay_hours: parseInt(e.target.value)})} 
-                className="mt-1 bg-secondary"
-              />
+        <div className="bg-white rounded-xl border border-border p-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-bold text-foreground mb-4">הגדרות PayMe</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold">Seller ID</label>
+                <Input 
+                  value={config.payme_seller_id || ''} 
+                  onChange={e => setConfig({...config, payme_seller_id: e.target.value})} 
+                  placeholder="מזהה מוכר PayMe"
+                  className="mt-1 bg-secondary"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold">Webhook URL</label>
+                <Input 
+                  value={config.webhook_url || ''} 
+                  onChange={e => setConfig({...config, webhook_url: e.target.value})} 
+                  placeholder="https://..."
+                  className="mt-1 bg-secondary"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold">ניסיונות חיוב חוזר מקסימלי</label>
+                <Input 
+                  type="number"
+                  value={config.retry_max_attempts || 3} 
+                  onChange={e => setConfig({...config, retry_max_attempts: parseInt(e.target.value)})} 
+                  className="mt-1 bg-secondary"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground font-semibold">הפרש בין ניסיונות (שעות)</label>
+                <Input 
+                  type="number"
+                  value={config.retry_delay_hours || 24} 
+                  onChange={e => setConfig({...config, retry_delay_hours: parseInt(e.target.value)})} 
+                  className="mt-1 bg-secondary"
+                />
+              </div>
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
+
+          {/* Test Mode Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+              <span>⚠️ מצב בדיקה</span>
+            </h3>
+            <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-foreground text-sm">הפעל מצב בדיקה</p>
+                  <p className="text-xs text-muted-foreground">כאשר דלוק, כל המחירים יהפכו לדיקה</p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={config.test_mode || false}
+                    onChange={e => setConfig({...config, test_mode: e.target.checked})}
+                    className="rounded"
+                  />
+                  <span className="text-xs font-semibold">{config.test_mode ? "דלוק" : "כבוי"}</span>
+                </label>
+              </div>
+              
+              {config.test_mode && (
+                <div>
+                  <label className="text-xs text-muted-foreground font-semibold">מחיר בדיקה (ש"ח)</label>
+                  <Input 
+                    type="number"
+                    value={config.test_price || 5}
+                    onChange={e => setConfig({...config, test_price: parseFloat(e.target.value)})}
+                    placeholder="5"
+                    className="mt-1 bg-white border-border"
+                  />
+                  <p className="text-[11px] text-warning mt-1">⚠️ נטון! הודעות בדיקה יטטבו מחייב אמיתי!</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
             <Button onClick={() => handleUpdateConfig('payme_seller_id', config.payme_seller_id)} size="sm" className="gap-2">
               <Save className="w-4 h-4" /> שמור הגדרות
             </Button>

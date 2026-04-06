@@ -38,17 +38,30 @@ export default function SiteSettings() {
     load();
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (configToSave = config) => {
+    if (!configToSave) return;
+    setSaving(true);
+    try {
+      if (configToSave.id) {
+        await base44.entities.SiteConfig.update(configToSave.id, configToSave);
+        toast({ title: "הגדרות עודכנו בהצלחה" });
+      } else {
+        await base44.entities.SiteConfig.create(configToSave);
+        toast({ title: "הגדרות נשמרו בהצלחה" });
+      }
+    } catch (e) {
+      toast({ title: "שגיאה", description: e.message, variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
+  const handleSavePayMe = async () => {
     if (!config) return;
     setSaving(true);
     try {
-      if (config.id) {
-        await base44.entities.SiteConfig.update(config.id, config);
-        toast({ title: "הגדרות עודכנו בהצלחה" });
-      } else {
-        await base44.entities.SiteConfig.create(config);
-        toast({ title: "הגדרות נשמרו בהצלחה" });
-      }
+      // מאחר שהגדרות PayMe אחסונות בנפרד בישות PaymeConfig
+      // נציין למשתמש שצריך להגדיר דרך דף ניהול PayMe
+      toast({ title: "עדכן בדשבורד ניהול PayMe", variant: "info" });
     } catch (e) {
       toast({ title: "שגיאה", description: e.message, variant: "destructive" });
     }
@@ -202,6 +215,40 @@ export default function SiteSettings() {
               className="mt-1 bg-secondary"
             />
           </div>
+        </div>
+
+        {/* PayMe Settings */}
+        <div className="bg-white border border-border rounded-xl p-6 space-y-4">
+          <h2 className="text-lg font-bold text-foreground">הגדרות PayMe</h2>
+          
+          <div className="flex items-center justify-between p-3 rounded-lg bg-warning/10 border border-warning/30">
+            <div>
+              <span className="text-sm font-bold text-foreground">⚠️ מצב בדיקה (TEST MODE)</span>
+              <p className="text-xs text-muted-foreground mt-1">כל המחירים יהפכו ל-5₪ לביצוע בדיקות. הנתונים אמיתיים!</p>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config?.test_mode || false}
+                onChange={e => setConfig({...config, test_mode: e.target.checked})}
+                className="rounded"
+              />
+              <span className="text-xs text-muted-foreground">{config?.test_mode ? "דלוק" : "כבוי"}</span>
+            </label>
+          </div>
+
+          {config?.test_mode && (
+            <div>
+              <label className="text-xs text-muted-foreground font-semibold">מחיר בדיקה (ש"ח)</label>
+              <Input
+                type="number"
+                value={config?.test_price || 5}
+                onChange={e => setConfig({...config, test_price: parseFloat(e.target.value)})}
+                placeholder="5"
+                className="mt-1 bg-secondary"
+              />
+            </div>
+          )}
         </div>
 
         {/* System Settings */}
