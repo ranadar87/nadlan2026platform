@@ -16,6 +16,8 @@ import Credits from './pages/Credits';
 import Settings from './pages/Settings';
 import CampaignLog from './pages/CampaignLog';
 import Onboarding from './pages/Onboarding';
+import AdminDashboard from './pages/AdminDashboard';
+import Billing from './pages/Billing';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -55,6 +57,8 @@ const AuthenticatedApp = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/campaigns/log" element={<CampaignLog />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/billing" element={<Billing />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>

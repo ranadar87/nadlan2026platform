@@ -33,6 +33,8 @@ const navByTab = {
 
 const bottomNav = [
   { path: "/settings", label: "הגדרות", icon: Settings },
+  { path: "/billing", label: "קרדיטים", icon: CreditCard },
+  { path: "/admin", label: "ניהול (Admin)", icon: BarChart3, adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -98,7 +100,7 @@ export default function Sidebar() {
 
       {/* Bottom nav */}
       <div className="px-3 pb-2 space-y-1">
-        {bottomNav.map((item) => {
+        {bottomNav.filter(item => !item.adminOnly).map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
           return (
@@ -114,6 +116,14 @@ export default function Sidebar() {
       </div>
 
       <CampaignStatusWidget />
+
+      {/* Admin button */}
+      <div className="px-3 pb-2 border-t border-border">
+        <Link to="/admin"
+          className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary transition-all w-full">
+          <BarChart3 className="w-4 h-4" /> ניהול
+        </Link>
+      </div>
 
       {/* Credits Widget */}
       <div className="p-4 border-t border-border">
