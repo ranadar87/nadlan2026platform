@@ -23,13 +23,13 @@
         "running",
         "paused",
         "completed",
-        "stopped"
+        "failed"
       ],
       "default": "draft"
     },
     "owner_user_id": {
       "type": "string",
-      "title": "\u05de\u05d6\u05d4\u05d4 \u05d1\u05e2\u05dc \u05d4\u05e7\u05de\u05e4\u05d9\u05d9\u05df"
+      "title": "\u05d1\u05e2\u05dc \u05d4\u05e7\u05de\u05e4\u05d9\u05d9\u05df"
     },
     "message_variations": {
       "type": "array",
@@ -102,37 +102,41 @@
       "title": "\u05e0\u05db\u05e9\u05dc\u05d5",
       "default": 0
     },
-    "daily_limit": {
+    "limit_daily": {
       "type": "number",
-      "title": "\u05de\u05d2\u05d1\u05dc\u05d4 \u05d9\u05d5\u05de\u05d9\u05ea",
+      "title": "\u05de\u05d2\u05d1\u05dc\u05ea \u05e9\u05dc\u05d9\u05d7\u05d4 \u05d9\u05d5\u05de\u05d9\u05ea",
       "default": 80
     },
     "delay_min_seconds": {
       "type": "number",
-      "title": "\u05d4\u05e9\u05d4\u05d9\u05d9\u05d4 \u05de\u05d9\u05e0\u05d9\u05de\u05dc\u05d9\u05ea",
+      "title": "\u05de\u05d9\u05e0\u05d9\u05de\u05d5\u05dd \u05d4\u05e4\u05e8\u05e9 \u05d1\u05d9\u05df \u05d4\u05d5\u05d3\u05e2\u05d5\u05ea",
       "default": 600
     },
     "delay_max_seconds": {
       "type": "number",
-      "title": "\u05d4\u05e9\u05d4\u05d9\u05d9\u05d4 \u05de\u05e7\u05e1\u05d9\u05de\u05dc\u05d9\u05ea",
+      "title": "\u05de\u05e7\u05e1\u05d9\u05de\u05d5\u05dd \u05d4\u05e4\u05e8\u05e9 \u05d1\u05d9\u05df \u05d4\u05d5\u05d3\u05e2\u05d5\u05ea",
       "default": 900
     },
     "start_immediately": {
       "type": "boolean",
-      "title": "\u05d4\u05ea\u05d7\u05dc \u05de\u05d9\u05d9\u05d3\u05d9\u05ea",
+      "title": "\u05d4\u05d0\u05dd \u05de\u05ea\u05d7\u05d9\u05dc\u05d9\u05dd \u05de\u05d9\u05d9\u05d3\u05d9\u05ea",
       "default": false
     },
     "scheduled_date": {
       "type": "string",
-      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05ea\u05d6\u05de\u05d5\u05df"
+      "title": "\u05de\u05ea\u05d9 \u05dc\u05d4\u05ea\u05d7\u05d9\u05dc \u05e7\u05de\u05e4\u05d9\u05d9\u05df \u05e9\u05d0\u05d9\u05e0\u05d5 \u05de\u05d9\u05d9\u05d3\u05d9"
     },
     "scheduled_time_start": {
       "type": "string",
-      "title": "\u05e9\u05e2\u05ea \u05d4\u05ea\u05d7\u05dc\u05d4"
+      "title": "\u05ea\u05d7\u05d9\u05dc\u05ea \u05d7\u05dc\u05d5\u05df \u05e9\u05e2\u05d5\u05ea, \u05dc\u05d3\u05d5\u05d2\u05de\u05d4 09:00"
     },
     "scheduled_time_end": {
       "type": "string",
-      "title": "\u05e9\u05e2\u05ea \u05e1\u05d9\u05d5\u05dd"
+      "title": "\u05e1\u05d5\u05e3 \u05d7\u05dc\u05d5\u05df \u05e9\u05e2\u05d5\u05ea, \u05dc\u05d3\u05d5\u05d2\u05de\u05d4 18:00"
+    },
+    "timezone": {
+      "type": "string",
+      "title": "timezone \u05dc\u05d3\u05d5\u05d2\u05de\u05d4 Asia/Jerusalem"
     },
     "skip_already_contacted": {
       "type": "boolean",

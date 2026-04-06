@@ -63,10 +63,17 @@ Deno.serve(async (req) => {
 
     // שמור phone ב-DB רק אם מחובר
     if (isConnected && statusData.phone) {
-      await base44.asServiceRole.entities.User.update(user.id, {
+      await base44.auth.updateMe({
         whatsapp_connected: true,
         whatsapp_phone: statusData.phone,
         whatsapp_manually_disconnected: false,
+        whatsapp_connected_at: statusData.connectedAt || new Date().toISOString()
+      }).catch(() => null);
+    } else if (!isConnected && user.whatsapp_manually_disconnected === false) {
+      // אם לא מחובר וזה לא disconnect ידני — אפס את whatsapp_connected
+      await base44.auth.updateMe({
+        whatsapp_connected: false,
+        whatsapp_phone: null
       }).catch(() => null);
     }
 

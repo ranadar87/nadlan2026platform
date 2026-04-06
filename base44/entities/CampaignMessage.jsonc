@@ -4,40 +4,27 @@
   "properties": {
     "campaign_id": {
       "type": "string",
-      "title": "\u05de\u05d6\u05d4\u05d4 \u05e7\u05de\u05e4\u05d9\u05d9\u05df"
+      "title": "\u05e9\u05d9\u05d5\u05da \u05dc\u05e7\u05de\u05e4\u05d9\u05d9\u05df"
     },
     "lead_id": {
       "type": "string",
-      "title": "\u05de\u05d6\u05d4\u05d4 \u05dc\u05d9\u05d3"
+      "title": "\u05e9\u05d9\u05d5\u05da \u05dc\u05dc\u05d9\u05d3"
+    },
+    "lead_phone": {
+      "type": "string",
+      "title": "\u05de\u05e1\u05e4\u05e8 \u05d9\u05e2\u05d3 \u05dc\u05e9\u05dc\u05d9\u05d7\u05d4"
     },
     "lead_name": {
       "type": "string",
       "title": "\u05e9\u05dd \u05d4\u05dc\u05d9\u05d3"
     },
-    "lead_phone": {
-      "type": "string",
-      "title": "\u05d8\u05dc\u05e4\u05d5\u05df \u05d4\u05dc\u05d9\u05d3"
-    },
-    "variation_used": {
-      "type": "string",
-      "title": "\u05d5\u05e8\u05d9\u05d0\u05e6\u05d9\u05d4",
-      "enum": [
-        "A",
-        "B",
-        "C"
-      ]
-    },
     "message_content": {
       "type": "string",
-      "title": "\u05ea\u05d5\u05db\u05df \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4"
+      "title": "\u05ea\u05d5\u05db\u05df \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4 \u05d1\u05e4\u05d5\u05e2\u05dc"
     },
-    "media_url": {
+    "url_media": {
       "type": "string",
-      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 \u05de\u05d3\u05d9\u05d4"
-    },
-    "scheduled_at": {
-      "type": "string",
-      "title": "\u05d6\u05de\u05df \u05e9\u05dc\u05d9\u05d7\u05d4 \u05de\u05ea\u05d5\u05d6\u05de\u05df"
+      "title": "\u05de\u05d3\u05d9\u05d4 \u05d0\u05dd \u05e7\u05d9\u05d9\u05de\u05ea"
     },
     "status": {
       "type": "string",
@@ -53,29 +40,33 @@
       ],
       "default": "pending"
     },
+    "at_scheduled": {
+      "type": "string",
+      "title": "\u05d4\u05de\u05d5\u05e2\u05d3 \u05e9\u05d1\u05d5 \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4 \u05de\u05d5\u05ea\u05e8\u05ea \u05dc\u05e9\u05dc\u05d9\u05d7\u05d4"
+    },
     "sending_started_at": {
       "type": "string",
-      "title": "\u05d6\u05de\u05df \u05d4\u05ea\u05d7\u05dc\u05ea \u05e9\u05dc\u05d9\u05d7\u05d4"
+      "title": "\u05de\u05ea\u05d9 worker \u05e0\u05e2\u05dc \u05d0\u05ea \u05d4\u05d4\u05d5\u05d3\u05e2\u05d4"
     },
     "sent_at": {
       "type": "string",
-      "title": "\u05e0\u05e9\u05dc\u05d7 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+      "title": "\u05de\u05d5\u05e2\u05d3 sent"
     },
     "delivered_at": {
       "type": "string",
-      "title": "\u05e0\u05de\u05e1\u05e8 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+      "title": "\u05de\u05d5\u05e2\u05d3 delivered"
     },
     "opened_at": {
       "type": "string",
-      "title": "\u05e0\u05e4\u05ea\u05d7 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+      "title": "\u05de\u05d5\u05e2\u05d3 read/opened"
     },
     "replied_at": {
       "type": "string",
-      "title": "\u05d4\u05d2\u05d9\u05d1 \u05d1\u05ea\u05d0\u05e8\u05d9\u05da"
+      "title": "\u05de\u05d5\u05e2\u05d3 reply"
     },
-    "error_message": {
+    "message_error": {
       "type": "string",
-      "title": "\u05d4\u05d5\u05d3\u05e2\u05ea \u05e9\u05d2\u05d9\u05d0\u05d4"
+      "title": "\u05d4\u05d5\u05d3\u05e2\u05ea \u05e9\u05d2\u05d9\u05d0\u05d4 \u05d0\u05dd \u05d4\u05e9\u05dc\u05d9\u05d7\u05d4 \u05e0\u05db\u05e9\u05dc\u05d4"
     }
   },
   "required": [

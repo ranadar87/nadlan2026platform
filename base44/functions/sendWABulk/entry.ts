@@ -10,7 +10,7 @@ function cleanName(name) {
   return (name || "").replace(/[{}]/g, "").trim();
 }
 
-// FIX 3: קבע את הזמן הבא שנמצא בתוך חלון השעות
+// חשב את הזמן הבא בתוך חלון השעות
 function nextSlotInWindow(fromDate, windowStart, windowEnd) {
   const [startH, startM] = (windowStart || "09:00").split(":").map(Number);
   const [endH, endM] = (windowEnd || "18:00").split(":").map(Number);
@@ -24,11 +24,19 @@ function nextSlotInWindow(fromDate, windowStart, windowEnd) {
     return d; // כבר בתוך החלון
   }
   
-  // חוץ מהחלון — קפוץ לתחילת החלון מחר
+  // חוץ מהחלון — קפוץ לתחילת החלון מחר או היום
   const next = new Date(d);
-  next.setDate(next.getDate() + (curMins >= endMins ? 1 : 0));
+  if (curMins >= endMins) {
+    next.setDate(next.getDate() + 1);
+  }
   next.setHours(startH, startM, 0, 0);
   return next;
+}
+
+// חשב את הזמן הבא אחרי jitter, ודא שנשאר בתוך החלון
+function nextSlotAfterJitter(cursor, jitter, windowStart, windowEnd) {
+  const next = new Date(cursor.getTime() + jitter * 1000);
+  return nextSlotInWindow(next, windowStart, windowEnd);
 }
 
 Deno.serve(async (req) => {
@@ -41,33 +49,58 @@ Deno.serve(async (req) => {
     const { campaignId } = body;
     if (!campaignId) return Response.json({ error: 'campaignId נדרש' }, { status: 400 });
 
+    // טען קמפיין
     const campaigns = await base44.asServiceRole.entities.Campaign.filter({ id: campaignId });
     if (!campaigns.length) return Response.json({ error: 'קמפיין לא נמצא' }, { status: 404 });
     const campaign = campaigns[0];
 
-    if (campaign.type !== "whatsapp") return Response.json({ error: 'פונקציה זו רק ל-WhatsApp' }, { status: 400 });
+    if (campaign.type !== "whatsapp") {
+      return Response.json({ error: 'פונקציה זו רק ל-WhatsApp' }, { status: 400 });
+    }
 
+    // טען וריאציות
     const variations = (campaign.message_variations || []).filter(v => v.content && v.content.trim());
     if (!variations.length) return Response.json({ error: 'אין תוכן הודעה' }, { status: 400 });
 
+    // טען לידים
     const leadIds = campaign.target_lead_ids || [];
     if (!leadIds.length) return Response.json({ error: 'אין נמענים' }, { status: 400 });
 
+    // שמור owner_user_id אם לא קיים
     if (!campaign.owner_user_id) {
       await base44.asServiceRole.entities.Campaign.update(campaignId, { owner_user_id: user.id }).catch(() => null);
     }
 
+    // בדוק אם כל ההודעות כבר יצאו (partial recovery)
     const existingMessages = await base44.asServiceRole.entities.CampaignMessage.filter({ campaign_id: campaignId });
-    if (existingMessages.length) {
+    const completedCount = existingMessages.filter(m => 
+      ["sent", "delivered", "opened", "replied", "failed"].includes(m.status)
+    ).length;
+
+    if (existingMessages.length === validLeads.length && completedCount === validLeads.length) {
       return Response.json({ ok: true, queued: existingMessages.length, message: 'הודעות כבר תוזמנו' });
     }
 
-    const fetchedLeads = await Promise.all(
-      leadIds.map(id => base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null))
-    );
-    const validLeads = fetchedLeads.filter(l => l && l.phone);
+    // אם יש partial send — משלים את היתר
+    let targetLeads = [];
+    if (existingMessages.length > 0 && existingMessages.length < leadIds.length) {
+      const existingLeadIds = new Set(existingMessages.map(m => m.lead_id));
+      targetLeads = (await Promise.all(
+        leadIds.filter(id => !existingLeadIds.has(id)).map(id => 
+          base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null)
+        )
+      )).filter(l => l && l.phone);
+    } else {
+      // fetch כל הלידים
+      const fetchedLeads = await Promise.all(
+        leadIds.map(id => 
+          base44.asServiceRole.entities.Lead.filter({ id }).then(r => r[0]).catch(() => null)
+        )
+      );
+      targetLeads = fetchedLeads.filter(l => l && l.phone);
+    }
 
-    if (!validLeads.length) return Response.json({ error: 'לא נמצאו לידים עם טלפון' }, { status: 400 });
+    if (!targetLeads.length) return Response.json({ error: 'לא נמצאו לידים עם טלפון' }, { status: 400 });
 
     const now = new Date();
     const delayMin = campaign.delay_min_seconds || 600;
@@ -75,22 +108,18 @@ Deno.serve(async (req) => {
     const windowStart = campaign.scheduled_time_start || "09:00";
     const windowEnd = campaign.scheduled_time_end || "18:00";
 
-    // FIX 2: קבע זמן בסיס לפי start_immediately או scheduled_date
+    // חשב baseTime לפי start_immediately או scheduled_date
     let baseTime;
     if (campaign.start_immediately) {
-      // התחל מיד — אבל רק אם בתוך חלון השעות
       baseTime = nextSlotInWindow(now, windowStart, windowEnd);
     } else if (campaign.scheduled_date) {
-      // תאריך ושעה שנבחרו ידנית
       const [startH, startM] = windowStart.split(":").map(Number);
       baseTime = new Date(campaign.scheduled_date);
       baseTime.setHours(startH, startM, 0, 0);
-      // אם הזמן כבר עבר — קפוץ ליום הבא
       if (baseTime < now) {
         baseTime.setDate(baseTime.getDate() + 1);
       }
     } else {
-      // ברירת מחדל: מחר בתחילת החלון
       baseTime = new Date(now);
       baseTime.setDate(baseTime.getDate() + 1);
       const [sh, sm] = windowStart.split(":").map(Number);
@@ -98,16 +127,16 @@ Deno.serve(async (req) => {
     }
 
     const messages = [];
-    let cursor = new Date(baseTime); // cursor = הזמן הנוכחי לחישוב הנוכחי
+    let cursor = new Date(baseTime);
 
-    for (let i = 0; i < validLeads.length; i++) {
-      const lead = validLeads[i];
+    for (let i = 0; i < targetLeads.length; i++) {
+      const lead = targetLeads[i];
       const variation = variations[i % variations.length];
       const content = (variation.content || "")
         .replace(/\{name\}/g, cleanName(lead.full_name))
         .replace(/\{phone\}/g, normalizePhone(lead.phone));
 
-      // FIX 3: ודא ש-cursor נמצא בתוך חלון השעות
+      // ודא ש-cursor נמצא בתוך חלון השעות
       cursor = nextSlotInWindow(cursor, windowStart, windowEnd);
       const scheduledAt = cursor.toISOString();
 
@@ -116,23 +145,23 @@ Deno.serve(async (req) => {
         lead_id: lead.id,
         lead_name: lead.full_name,
         lead_phone: normalizePhone(lead.phone),
-        variation_used: variation.label || "A",
         message_content: content,
-        media_url: variation.media_url || campaign.global_media_url || null,
+        url_media: variation.media_url || campaign.global_media_url || null,
         status: "pending",
-        scheduled_at: scheduledAt,
+        at_scheduled: scheduledAt,
       });
 
       messages.push({ leadId: lead.id, messageId: msg.id, scheduledAt });
 
-      // הוסף delay אקראי לcursor הבא
+      // הוסף jitter עם wrap-around
       const jitter = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
-      cursor = new Date(cursor.getTime() + jitter * 1000);
+      cursor = nextSlotAfterJitter(cursor, jitter, windowStart, windowEnd);
     }
 
+    // עדכן campaign
     await base44.asServiceRole.entities.Campaign.update(campaignId, {
       status: "running",
-      total_recipients: validLeads.length,
+      total_recipients: targetLeads.length,
       sent_count: 0,
       failed_count: 0,
     });
@@ -140,7 +169,7 @@ Deno.serve(async (req) => {
     const firstAt = messages[0]?.scheduledAt ? new Date(messages[0].scheduledAt).toLocaleTimeString("he-IL") : "—";
     const lastAt = messages[messages.length-1]?.scheduledAt ? new Date(messages[messages.length-1].scheduledAt).toLocaleDateString("he-IL") : "—";
 
-    console.log(`[INIT] Campaign ${campaignId}: ${messages.length} messages scheduled. First: ${firstAt}, Last day: ${lastAt}`);
+    console.log(`[INIT] Campaign ${campaignId}: ${messages.length} messages queued. First: ${firstAt}, Last day: ${lastAt}`);
 
     return Response.json({
       ok: true,
@@ -148,7 +177,7 @@ Deno.serve(async (req) => {
       queued: messages.length,
       firstMessage: messages[0]?.scheduledAt,
       lastMessage: messages[messages.length-1]?.scheduledAt,
-      message: `${messages.length} הודעות תוזמנו בחלון ${windowStart}–${windowEnd}`,
+      message: `${messages.length} הודעות בתור בחלון ${windowStart}–${windowEnd}`,
     });
 
   } catch (error) {

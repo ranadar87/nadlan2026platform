@@ -11,24 +11,34 @@ Deno.serve(async (req) => {
     const railwaySecret = Deno.env.get("RAILWAY_API_SECRET");
     const sessionId = `user_${user.id}`;
 
-    // 1. מחק את ה-session מ-Railway
-    await fetch(`${railwayUrl}/session/delete/${sessionId}`, {
+    // קרא ל-DELETE /session/delete/:sessionId ב-Railway
+    const deleteRes = await fetch(`${railwayUrl}/session/delete/${sessionId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${railwaySecret}` },
       signal: AbortSignal.timeout(8000),
-    }).catch(() => null);
+    });
 
-    // 2. עדכן DB — סמן כ"ניתוק ידני"
-    await base44.asServiceRole.entities.User.update(user.id, {
+    if (!deleteRes.ok) {
+      const errData = await deleteRes.json().catch(() => ({}));
+      console.error("Railway delete failed:", errData);
+    }
+
+    // עדכן User entity בכל מקרה
+    await base44.auth.updateMe({
       whatsapp_connected: false,
       whatsapp_phone: null,
       whatsapp_manually_disconnected: true,
-      whatsapp_disconnected_at: new Date().toISOString(),
+      whatsapp_disconnected_at: new Date().toISOString()
+    }).catch(() => null);
+
+    return Response.json({
+      status: "disconnected",
+      message: "Disconnected successfully"
     });
 
-    return Response.json({ ok: true, message: "WhatsApp disconnected successfully" });
-
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({
+      error: error.message
+    }, { status: 500 });
   }
 });
