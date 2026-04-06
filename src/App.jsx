@@ -24,6 +24,10 @@ import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
 import PurchaseSuccess from './pages/PurchaseSuccess';
 import SubscriptionDashboard from './pages/SubscriptionDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import CreditManagement from './pages/admin/CreditManagement';
+import SiteSettings from './pages/admin/SiteSettings';
+import AutomationManagement from './pages/admin/AutomationManagement';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -71,6 +75,10 @@ const AuthenticatedApp = () => {
         <Route path="/campaigns/log" element={<CampaignLog />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<UserManagement />} />
+        <Route path="/admin/credits" element={<CreditManagement />} />
+        <Route path="/admin/settings" element={<SiteSettings />} />
+        <Route path="/admin/automations" element={<AutomationManagement />} />
         <Route path="/admin/payment-plans" element={<PaymentPlansManager />} />
         <Route path="/billing" element={<Billing />} />
         <Route path="/subscription" element={<SubscriptionDashboard />} />

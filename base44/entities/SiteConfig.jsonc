@@ -1,0 +1,118 @@
+{
+  "name": "SiteConfig",
+  "type": "object",
+  "properties": {
+    "config_key": {
+      "type": "string",
+      "title": "\u05de\u05e4\u05ea\u05d7 \u05d4\u05d2\u05d3\u05e8\u05d4 (global)",
+      "default": "global"
+    },
+    "site_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05d4\u05d0\u05ea\u05e8"
+    },
+    "site_description": {
+      "type": "string",
+      "title": "\u05ea\u05d9\u05d0\u05d5\u05e8 \u05d4\u05d0\u05ea\u05e8"
+    },
+    "site_logo_url": {
+      "type": "string",
+      "title": "URL \u05e9\u05dc \u05dc\u05d5\u05d2\u05d5"
+    },
+    "site_favicon_url": {
+      "type": "string",
+      "title": "URL \u05e9\u05dc Favicon"
+    },
+    "header_code": {
+      "type": "string",
+      "title": "\u05e7\u05d5\u05d3 \u05d1-Header (\u05d1\u05ea\u05d5\u05da <head>)",
+      "description": "\u05e7\u05d5\u05d3\u05d9 \u05d0\u05e0\u05dc\u05d9\u05d8\u05d9\u05e7\u05e1, CSS, \u05d0\u05d5 \u05e1\u05e7\u05e8\u05d9\u05e4\u05d8\u05d9\u05dd \u05d0\u05d7\u05e8\u05d9\u05dd"
+    },
+    "footer_code": {
+      "type": "string",
+      "title": "\u05e7\u05d5\u05d3 \u05d1-Footer (\u05dc\u05e4\u05e0\u05d9 </body>)",
+      "description": "\u05e7\u05d5\u05d3\u05d9 \u05e1\u05e7\u05e8\u05d9\u05e4\u05d8\u05d9\u05dd \u05d7\u05d9\u05e6\u05d5\u05e0\u05d9\u05d9\u05dd, \u05d0\u05e0\u05dc\u05d9\u05d8\u05d9\u05e7\u05e1"
+    },
+    "custom_css": {
+      "type": "string",
+      "title": "CSS \u05de\u05d5\u05ea\u05d0\u05dd \u05d0\u05d9\u05e9\u05d9\u05ea"
+    },
+    "contact_email": {
+      "type": "string",
+      "title": "\u05d3\u05d5\u05d0\"\u05dc \u05dc\u05ea\u05de\u05d9\u05db\u05d4"
+    },
+    "contact_phone": {
+      "type": "string",
+      "title": "\u05d8\u05dc\u05e4\u05d5\u05df \u05dc\u05ea\u05de\u05d9\u05db\u05d4"
+    },
+    "whatsapp_link": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 WhatsApp"
+    },
+    "terms_of_service_url": {
+      "type": "string",
+      "title": "URL \u05dc\u05ea\u05e0\u05d0\u05d9 \u05e9\u05d9\u05de\u05d5\u05e9"
+    },
+    "privacy_policy_url": {
+      "type": "string",
+      "title": "URL \u05dc\u05de\u05d3\u05d9\u05e0\u05d9\u05d5\u05ea \u05e4\u05e8\u05d8\u05d9\u05d5\u05ea"
+    },
+    "maintenance_mode": {
+      "type": "boolean",
+      "title": "\u05de\u05e6\u05d1 \u05ea\u05d7\u05d6\u05d5\u05e7\u05d4 (\u05e1\u05d2\u05d5\u05e8 \u05dc\u05de\u05e9\u05ea\u05de\u05e9\u05d9\u05dd)",
+      "default": false
+    },
+    "maintenance_message": {
+      "type": "string",
+      "title": "\u05d4\u05d5\u05d3\u05e2\u05ea \u05ea\u05d7\u05d6\u05d5\u05e7\u05d4"
+    },
+    "analytics_enabled": {
+      "type": "boolean",
+      "title": "\u05d0\u05e0\u05dc\u05d9\u05d8\u05d9\u05e7\u05e1 \u05de\u05d5\u05e4\u05e2\u05dc",
+      "default": true
+    },
+    "sms_provider": {
+      "type": "string",
+      "title": "\u05e1\u05e4\u05e7 SMS \u05d1\u05e8\u05d9\u05e8\u05ea \u05de\u05d7\u05d3\u05dc",
+      "enum": [
+        "twilio",
+        "messagebird",
+        "custom"
+      ],
+      "default": "twilio"
+    },
+    "whatsapp_template_namespace": {
+      "type": "string",
+      "title": "Namespace \u05e9\u05dc \u05ea\u05d1\u05e0\u05d9\u05d5\u05ea WhatsApp"
+    },
+    "max_free_trial_days": {
+      "type": "number",
+      "title": "\u05d9\u05de\u05d9 \u05d8\u05e8\u05d9\u05d9\u05dc \u05d1\u05e8\u05d9\u05e8\u05ea \u05de\u05d7\u05d3\u05dc",
+      "default": 14
+    },
+    "support_chat_enabled": {
+      "type": "boolean",
+      "title": "\u05e6'\u05d0\u05d8 \u05ea\u05de\u05d9\u05db\u05d4 \u05de\u05d5\u05e4\u05e2\u05dc",
+      "default": true
+    },
+    "social_twitter": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 Twitter"
+    },
+    "social_facebook": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 Facebook"
+    },
+    "social_linkedin": {
+      "type": "string",
+      "title": "\u05e7\u05d9\u05e9\u05d5\u05e8 LinkedIn"
+    },
+    "last_updated_by": {
+      "type": "string",
+      "title": "\u05e2\u05d5\u05d3\u05db\u05df \u05e2\u05dc \u05d9\u05d3\u05d9"
+    }
+  },
+  "required": [
+    "config_key"
+  ]
+}
