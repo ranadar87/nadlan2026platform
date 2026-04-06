@@ -57,7 +57,8 @@ export default function Scrape() {
         search_params: params,
       });
 
-      const response = await base44.functions.invoke("scrapeLeads", {
+      // Start the run (returns immediately)
+      const startRes = await base44.functions.invoke("scrapeLeads", {
         source: src,
         batch_id: batch.id,
         city: params.city,
@@ -75,15 +76,49 @@ export default function Scrape() {
         exclude_agents: params.exclude_agents || false,
       });
 
-      const result = response.data;
-      toast({
-        title: `שאיבה מ${src === "yad2" ? "יד2" : "מדלן"} הושלמה`,
-        description: `${result.new_leads || 0} לידים חדשים, ${result.duplicates || 0} כפולים`,
-      });
-    }
+      const { run_id, dataset_id } = startRes.data;
+      if (!run_id) {
+        toast({ title: "שגיאה", description: `לא ניתן להתחיל שאיבה מ${src}`, variant: "destructive" });
+        continue;
+      }
 
-    setScraping(false);
-    navigate("/leads");
+      toast({ title: `שאיבה מ${src === "yad2" ? "יד2" : "מדלן"} התחילה`, description: "ממתין לתוצאות (1-3 דקות)..." });
+
+      // Poll until done
+      let attempts = 0;
+      const maxAttempts = 36; // 3 minutes
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const pollRes = await base44.functions.invoke("scrapeLeads", {
+            check_run_id: run_id,
+            dataset_id: dataset_id,
+            batch_id: batch.id,
+            source: src,
+          });
+          const data = pollRes.data;
+          if (data.run_status === "SUCCEEDED") {
+            clearInterval(poll);
+            toast({
+              title: `שאיבה מ${src === "yad2" ? "יד2" : "מדלן"} הושלמה ✅`,
+              description: `${data.new_leads || 0} לידים חדשים, ${data.duplicates || 0} כפולים`,
+            });
+            setScraping(false);
+            navigate("/leads");
+          } else if (data.run_status === "FAILED" || data.run_status === "ABORTED" || data.run_status === "TIMED-OUT") {
+            clearInterval(poll);
+            toast({ title: `שגיאה בשאיבה מ${src}`, description: data.error, variant: "destructive" });
+            setScraping(false);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(poll);
+            toast({ title: "השאיבה נמשכת זמן רב", description: "בדוק את הלידים מאוחר יותר", variant: "destructive" });
+            setScraping(false);
+          }
+        } catch (e) {
+          // keep polling
+        }
+      }, 5000);
+    }
   };
 
   return (
