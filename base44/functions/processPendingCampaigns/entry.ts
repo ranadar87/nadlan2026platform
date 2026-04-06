@@ -5,6 +5,7 @@ const HARD_DAILY_LIMIT = 80;
 function normalizePhone(phone) {
   let p = (phone || "").replace(/[\-\s]/g, "");
   if (p.startsWith("0")) p = "972" + p.slice(1);
+  if (!p.startsWith("972")) p = "972" + p;
   return p;
 }
 
