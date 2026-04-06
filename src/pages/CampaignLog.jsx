@@ -142,13 +142,14 @@ export default function CampaignLog() {
 
       {/* Messages table */}
       <div className="bg-white border border-border rounded-xl overflow-hidden">
-       <div className="grid grid-cols-[1fr_80px_120px_140px_200px] gap-0 text-xs font-semibold text-muted-foreground bg-secondary px-4 py-3 border-b border-border text-right">
-         <span>שם / טלפון</span>
-         <span>וריאציה</span>
-         <span>סטטוס</span>
-         <span>נשלח</span>
-         <span>שגיאה</span>
-       </div>
+        {/* Header */}
+        <div className="grid grid-cols-[2fr_80px_120px_130px_1fr] gap-0 text-xs font-semibold text-muted-foreground bg-secondary px-5 py-3 border-b border-border text-right">
+          <span>שם / טלפון</span>
+          <span className="text-center">וריאציה</span>
+          <span className="text-center">סטטוס</span>
+          <span className="text-center">זמן שליחה</span>
+          <span>שגיאה</span>
+        </div>
         {loading ? (
           <div className="space-y-0">
             {[1,2,3,4,5].map(i => (
@@ -158,37 +159,53 @@ export default function CampaignLog() {
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">אין הודעות תואמות</div>
         ) : (
-          filtered.map((msg, i) => {
+          filtered.map((msg) => {
             const sc = statusConfig[msg.status] || statusConfig.pending;
             const StatusIcon = sc.icon;
             return (
-              <div key={msg.id} className="grid grid-cols-[1fr_80px_120px_140px_200px] gap-0 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/30 transition-colors items-center text-right">
-                <div>
-                  <p className="text-sm font-medium text-foreground truncate">{msg.lead_name || "—"}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono truncate">{msg.lead_phone}</p>
+              <div key={msg.id} className="grid grid-cols-[2fr_80px_120px_130px_1fr] gap-0 px-5 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/20 transition-colors items-center">
+                {/* Name + Phone */}
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-foreground">{msg.lead_name || "—"}</p>
+                  <p className="text-[11px] text-muted-foreground font-mono mt-0.5" dir="ltr">{msg.lead_phone || "—"}</p>
                 </div>
+
+                {/* Variation */}
                 <div className="flex justify-center">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
+                  <span className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
                     {msg.variation_used || "A"}
                   </span>
                 </div>
+
+                {/* Status */}
                 <div className="flex justify-center">
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap ${sc.color}`}>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${sc.color}`}>
                     <StatusIcon className="w-3 h-3" />
                     {sc.label}
                   </span>
                 </div>
+
+                {/* Sent time */}
                 <div className="text-center">
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap block">
-                    {msg.sent_at ? moment(msg.sent_at).format("DD/MM HH:mm") : "—"}
-                  </span>
+                  {msg.sent_at ? (
+                    <span className="text-xs text-muted-foreground">
+                      {moment(msg.sent_at).format("DD/MM/YY")}<br />
+                      <span className="font-mono text-[11px]">{moment(msg.sent_at).format("HH:mm")}</span>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/50">—</span>
+                  )}
                 </div>
+
+                {/* Error */}
                 <div className="text-right">
-                  {msg.error_message && (
-                    <span className="text-[10px] text-destructive truncate block" title={msg.error_message}>
+                  {msg.error_message ? (
+                    <span className="text-[11px] text-destructive bg-destructive/8 px-2 py-0.5 rounded block truncate max-w-[200px]" title={msg.error_message}>
                       {msg.error_message}
                     </span>
-                  )}
+                  ) : msg.status !== "pending" && msg.status !== "failed" ? (
+                    <span className="text-[11px] text-success">✓ ביצוע תקין</span>
+                  ) : null}
                 </div>
               </div>
             );
