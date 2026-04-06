@@ -40,9 +40,21 @@ export default function CampaignStatusWidget() {
       
       if (upcoming?.scheduled_at) {
         const scheduledTime = new Date(upcoming.scheduled_at);
-        setNextMsg({ ...upcoming, timeString: moment(scheduledTime).format("HH:mm") });
+        const diffMs = scheduledTime - now;
+        const diffMins = Math.ceil(diffMs / 60000);
+        
+        let timeString;
+        if (diffMins <= 0) {
+          timeString = "כעת";
+        } else if (diffMins < 60) {
+          timeString = `בעוד ${diffMins} דק'`;
+        } else {
+          timeString = moment(scheduledTime).format("HH:mm");
+        }
+        
+        setNextMsg({ ...upcoming, timeString });
       } else if (msgs.length > 0) {
-        setNextMsg({ ...msgs[0], timeString: "בקרוב" });
+        setNextMsg({ ...msgs[0], timeString: "בתור" });
       } else {
         setNextMsg(null);
       }
