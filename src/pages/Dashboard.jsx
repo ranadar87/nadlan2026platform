@@ -5,7 +5,6 @@ import { Home, Megaphone, Send, Eye } from "lucide-react";
 import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
 import QuickActions from "../components/dashboard/QuickActions";
-import ActiveCampaignCard from "../components/dashboard/ActiveCampaignCard";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalLeads: 0, activeCampaigns: 0, sentToday: 0, openRate: 0, newThisWeek: 0 });
@@ -89,7 +88,6 @@ export default function Dashboard() {
         <RecentActivity />
         <div className="flex flex-col gap-0">
           <QuickActions />
-          <ActiveCampaignCard />
         </div>
       </div>
     </div>
