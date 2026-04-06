@@ -75,8 +75,18 @@ export default function Topbar() {
     <>
     <HelpCenter open={showHelp} onClose={() => setShowHelp(false)} />
     <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-8 gap-4" style={{ fontFamily: "'Assistant', sans-serif" }}>
-      {/* Left: actions */}
+      {/* Left: user info + WA status */}
       <div className="flex items-center gap-3">
+        <Link to="/scrape" data-tour="scrape-btn">
+          <Button variant="outline" size="sm" className="gap-2 h-9 px-4 text-sm font-medium border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 rounded-xl transition-all duration-200">
+            <Search className="w-4 h-4" />
+            שאב לידים
+          </Button>
+        </Link>
+      </div>
+
+      {/* Center: actions */}
+      <div className="flex items-center gap-3 mx-auto">
         <Link to="/scrape" data-tour="scrape-btn">
           <Button variant="outline" size="sm" className="gap-2 h-9 px-4 text-sm font-medium border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 rounded-xl transition-all duration-200">
             <Search className="w-4 h-4" />
@@ -91,7 +101,7 @@ export default function Topbar() {
         </Link>
       </div>
 
-      {/* Right: user info */}
+      {/* Right: icons */}
       <div className="flex items-center gap-3 ml-auto">
         {/* WhatsApp status */}
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary/40 text-[11px]">
@@ -117,10 +127,6 @@ export default function Topbar() {
               <span className="font-medium text-muted-foreground">בדיקה...</span>
             </>
           )}
-        </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-sm font-bold text-foreground leading-tight">{title}</p>
-          <p className="text-xs text-muted-foreground">{user ? `${user.full_name}` : "משתמש"} • {today}</p>
         </div>
         <button onClick={() => setShowHelp(true)} title="מרכז תמיכה" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
           <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
