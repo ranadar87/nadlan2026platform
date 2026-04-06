@@ -109,8 +109,16 @@ Deno.serve(async (req) => {
       total_recipients: leadsToSend.length,
     });
 
+    // נרמל מספרי טלפון לפורמט בינלאומי
+    const normalizePhone = (phone) => {
+      let p = (phone || "").replace(/[\-\s]/g, ""); // הסר מקפים ורווחים
+      if (p.startsWith("0")) p = "972" + p.slice(1); // המר 05X → 9725X
+      return p;
+    };
+
     const messages = [];
-    addLog("INFO", "BATCH_START", "התחלת שליחה", { totalLeads: leadsToSend.length, totalVariations: variations.length });
+    addLog("INFO", "BATCH_START", "התחלת שליחה",
+      { totalLeads: leadsToSend.length, totalVariations: variations.length });
     for (let i = 0; i < leadsToSend.length; i++) {
       const lead = leadsToSend[i];
       const variation = variations[i % variations.length];
@@ -160,7 +168,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           sessionId,
-          to: lead.phone,
+          to: normalizePhone(lead.phone),
           message: content,
           mediaUrl: variation.media_url || campaign.global_media_url || null,
           messageId: msg.id,
