@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
 
       // אחרי חישוב scheduledAt, הוסף delay לשורה הבאה
       if (i < validLeads.length - 1) {
-        const jitter = Math.floor(Math.random() * (delayMax - delayMin)) + delayMin;
+        const jitter = Math.floor(Math.random() * (delayMax - delayMin + 1)) + delayMin;
         cumulativeDelay += jitter;
       }
 
