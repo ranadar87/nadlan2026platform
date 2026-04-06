@@ -505,6 +505,12 @@ export default function LandingPage() {
               </ul>
             </div>
             <div>
+              <p className="font-bold text-foreground mb-3 text-sm">ניהול</p>
+              <ul className="space-y-2 text-xs text-muted-foreground">
+                <li><Link to="/admin" className="hover:text-foreground">דשבורד אדמין</Link></li>
+              </ul>
+            </div>
+            <div>
               <p className="font-bold text-foreground mb-3 text-sm">צור קשר</p>
               <p className="text-xs text-muted-foreground">support@zira.co.il</p>
               <p className="text-xs text-muted-foreground mt-2">WhatsApp: 054-XXX-XXXX</p>
