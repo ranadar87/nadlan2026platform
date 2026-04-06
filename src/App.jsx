@@ -23,6 +23,7 @@ import PaymentPlansManager from './pages/admin/PaymentPlansManager';
 import Pricing from './pages/Pricing';
 import Checkout from './pages/Checkout';
 import PurchaseSuccess from './pages/PurchaseSuccess';
+import SubscriptionDashboard from './pages/SubscriptionDashboard';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/payment-plans" element={<PaymentPlansManager />} />
         <Route path="/billing" element={<Billing />} />
+        <Route path="/subscription" element={<SubscriptionDashboard />} />
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
