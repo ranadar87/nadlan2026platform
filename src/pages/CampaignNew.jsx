@@ -37,23 +37,26 @@ export default function CampaignNew() {
   const update = (key, value) => setCampaign(prev => ({ ...prev, [key]: value }));
 
   const canProceed = () => {
-    if (step === 0 && !campaign.name.trim()) {
-      toast({ title: "שגיאה", description: "יש להזין שם לקמפיין", variant: "destructive" });
-      return false;
+    if (step === 0) {
+      return campaign.name?.trim() && campaign.type && campaign.message_variations?.length > 0;
     }
-    if (step === 1 && campaign.message_variations.length === 0) {
-      toast({ title: "שגיאה", description: "יש ליצור לפחות וריאציה אחת", variant: "destructive" });
-      return false;
+    if (step === 1) {
+      return campaign.target_lead_ids?.length > 0;
     }
-    if (step === 2 && campaign.target_lead_ids.length === 0) {
-      toast({ title: "שגיאה", description: "יש לבחור לפחות ליד אחד", variant: "destructive" });
-      return false;
+    if (step === 2) {
+      return true;
+    }
+    if (step === 3) {
+      return campaign.target_lead_ids?.length > 0;
     }
     return true;
   };
 
   const handleCreate = async () => {
-    // בדיקת חיבור WhatsApp לפני יצירת קמפיין
+    if (!campaign.target_lead_ids || campaign.target_lead_ids.length === 0) {
+      toast({ title: "⚠️ אין לידים נבחרים", description: "בחר לפחות ליד אחד לשליחת קמפיין", variant: "destructive" });
+      return;
+    }
     if (campaign.type === "whatsapp" && !waConnected) {
       toast({ title: "⚠️ WhatsApp לא מחובר", description: "יש לחבר WhatsApp בהגדרות לפני שליחת קמפיין", variant: "destructive", duration: 6000 });
       return;
@@ -80,7 +83,7 @@ export default function CampaignNew() {
           } else if (queued > 0) {
             toast({ title: "⚠️ שליחה חלקית", description: `${queued} הודעות שלחו, ${failed} פשלו` });
           } else {
-            toast({ title: "❌ שגיאה בשליחה", description: `בדוק את הלוגים שרוצים מתוך הקמפיין`, variant: "destructive" });
+           toast({ title: "❌ שגיאה בשליחה", description: `בדוק את הלוגים שרוצים מתוך הקמפיין`, variant: "destructive" });
           }
         } catch (sendError) {
           console.error("sendWABulk error:", sendError);
