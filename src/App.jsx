@@ -70,7 +70,6 @@ function App() {
         <Router>
           <AuthenticatedApp />
         </Router>
-        <Toaster />
       </QueryClientProvider>
     </AuthProvider>
   )
