@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -86,8 +88,22 @@ export default function ScrapeForm({ params, onChange }) {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">כמות תוצאות</Label>
-          <Input type="number" value={params.max_items || "150"} onChange={e => update("max_items", e.target.value)} className="bg-secondary border-border mt-1" dir="ltr" />
+          <div className="flex items-center gap-1.5 mb-1">
+            <Label className="text-xs text-muted-foreground">כמות קרדיטים לשימוש</Label>
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">
+                    <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                  כל ליד חדש שנשמר מנכה קרדיט אחד מהחשבון שלך. המספר כאן הוא המקסימום שתשאב, אך הניכוי בפועל יהיה לפי מספר הלידים החדשים שנמצאו (ללא כפילוים).
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <Input type="number" value={params.max_items || "150"} onChange={e => update("max_items", e.target.value)} className="bg-secondary border-border" dir="ltr" />
         </div>
         <div>
           <Label className="text-xs text-muted-foreground">מחיר מינימום (₪)</Label>

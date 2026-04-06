@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, Lightbulb } from "lucide-react";
+import { Search, Loader2, Lightbulb, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
 import SourceSelector from "../components/scrape/SourceSelector";
 import ScrapeForm from "../components/scrape/ScrapeForm";
+import ScrapeProgressModal from "../components/scrape/ScrapeProgressModal";
 
 const TEMPLATES_KEY = "scrape_templates";
 
@@ -18,6 +19,7 @@ export default function Scrape() {
   const [templates, setTemplates] = useState([]);
   const [templateName, setTemplateName] = useState("");
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [progressModal, setProgressModal] = useState({ open: false, batchParams: [] });
 
   useEffect(() => {
     try {
@@ -49,6 +51,7 @@ export default function Scrape() {
     }
     setScraping(true);
     const sources = source === "both" ? ["yad2", "madlan"] : [source];
+    const batchParams = [];
 
     for (const src of sources) {
       const batch = await base44.entities.ScrapeBatch.create({
@@ -57,7 +60,6 @@ export default function Scrape() {
         search_params: params,
       });
 
-      // Start the run (returns immediately)
       const startRes = await base44.functions.invoke("scrapeLeads", {
         source: src,
         batch_id: batch.id,
@@ -79,106 +81,83 @@ export default function Scrape() {
       const { run_id, dataset_id } = startRes.data;
       if (!run_id) {
         toast({ title: "שגיאה", description: `לא ניתן להתחיל שאיבה מ${src}`, variant: "destructive" });
-        continue;
+        setScraping(false);
+        return;
       }
 
-      toast({ title: `שאיבה מ${src === "yad2" ? "יד2" : "מדלן"} התחילה`, description: "ממתין לתוצאות (1-3 דקות)..." });
-
-      // Poll until done
-      let attempts = 0;
-      const maxAttempts = 36; // 3 minutes
-      const poll = setInterval(async () => {
-        attempts++;
-        try {
-          const pollRes = await base44.functions.invoke("scrapeLeads", {
-            check_run_id: run_id,
-            dataset_id: dataset_id,
-            batch_id: batch.id,
-            source: src,
-          });
-          const data = pollRes.data;
-          if (data.run_status === "SUCCEEDED") {
-            clearInterval(poll);
-            toast({
-              title: `שאיבה מ${src === "yad2" ? "יד2" : "מדלן"} הושלמה ✅`,
-              description: `${data.new_leads || 0} לידים חדשים, ${data.duplicates || 0} כפולים`,
-            });
-            setScraping(false);
-            navigate("/leads");
-          } else if (data.run_status === "FAILED" || data.run_status === "ABORTED" || data.run_status === "TIMED-OUT") {
-            clearInterval(poll);
-            toast({ title: `שגיאה בשאיבה מ${src}`, description: data.error, variant: "destructive" });
-            setScraping(false);
-          } else if (attempts >= maxAttempts) {
-            clearInterval(poll);
-            toast({ title: "השאיבה נמשכת זמן רב", description: "בדוק את הלידים מאוחר יותר", variant: "destructive" });
-            setScraping(false);
-          }
-        } catch (e) {
-          // keep polling
-        }
-      }, 5000);
+      batchParams.push({ source: src, batchId: batch.id, runId: run_id, datasetId: dataset_id });
     }
+
+    // Open the progress modal
+    setProgressModal({ open: true, batchParams });
+    setScraping(false);
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-        <div>
-          <h3 className="text-sm font-semibold text-foreground mb-1">מקור הנתונים</h3>
-          <p className="text-xs text-muted-foreground mb-4">בחר מאיזה אתר לשאוב לידים</p>
-          <SourceSelector value={source} onChange={setSource} />
-        </div>
-        <div className="border-t border-border" />
-        <ScrapeForm params={params} onChange={setParams} />
-        <div className="border-t border-border" />
-        {/* Templates */}
-        {templates.length > 0 && (
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-muted-foreground">תבניות שמורות:</span>
-            {templates.map((tpl, i) => (
-              <button key={i} onClick={() => loadTemplate(tpl)}
-                className="text-xs px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
-                {tpl.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="bg-info/5 border border-info/20 rounded-lg p-4 flex items-start gap-3">
-          <Lightbulb className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+    <>
+      <div className="max-w-4xl space-y-6">
+        <div className="bg-card border border-border rounded-xl p-6 space-y-6">
           <div>
-            <p className="text-sm font-semibold text-foreground">מערכת קרדיטים</p>
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-              כל שאיבה מנכה קרדיטים מהחשבון שלך לפי כמות הלידים שנמצאו בפועל (לא לפי כמות מבוקשת). ניתן לרכוש קרדיטים נוספים בדף <strong>קרדיטים</strong>.
-              {source === "both" && " שאיבה מ-2 מקורות מנכה פעמיים."}
-            </p>
+            <h3 className="text-sm font-semibold text-foreground mb-1">מקור הנתונים</h3>
+            <p className="text-xs text-muted-foreground mb-4">בחר מאיזה אתר לשאוב לידים</p>
+            <SourceSelector value={source} onChange={setSource} />
           </div>
-        </div>
+          <div className="border-t border-border" />
+          <ScrapeForm params={params} onChange={setParams} />
+          <div className="border-t border-border" />
+          {templates.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-muted-foreground">תבניות שמורות:</span>
+              {templates.map((tpl, i) => (
+                <button key={i} onClick={() => loadTemplate(tpl)}
+                  className="text-xs px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
+                  {tpl.name}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {showSaveDialog ? (
-          <div className="flex gap-2 items-center">
-            <input
-              value={templateName}
-              onChange={e => setTemplateName(e.target.value)}
-              placeholder="שם התבנית..."
-              className="flex-1 h-9 px-3 rounded-md border border-input bg-secondary text-sm"
-              onKeyDown={e => e.key === "Enter" && handleSaveTemplate()}
-              autoFocus
-            />
-            <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim()}>שמור</Button>
-            <Button size="sm" variant="outline" onClick={() => setShowSaveDialog(false)}>ביטול</Button>
+          <div className="bg-info/5 border border-info/20 rounded-lg p-4 flex items-start gap-3">
+            <Lightbulb className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">מערכת קרדיטים</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                כל שאיבה מנכה קרדיטים מהחשבון שלך לפי כמות הלידים שנמצאו בפועל — ליד חדש אחד = קרדיט אחד.
+                {source === "both" && " שאיבה מ-2 מקורות מנכה פעמיים."}
+              </p>
+            </div>
           </div>
-        ) : (
-          <div className="flex gap-3">
-            <Button className="gap-2" onClick={handleScrape} disabled={scraping}>
-              {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              {scraping ? "שואב לידים..." : "התחל שאיבה"}
-            </Button>
-            <Button variant="outline" className="border-border" onClick={() => setShowSaveDialog(true)}>שמור כתבנית</Button>
-          </div>
-        )}
+
+          {showSaveDialog ? (
+            <div className="flex gap-2 items-center">
+              <input
+                value={templateName}
+                onChange={e => setTemplateName(e.target.value)}
+                placeholder="שם התבנית..."
+                className="flex-1 h-9 px-3 rounded-md border border-input bg-secondary text-sm"
+                onKeyDown={e => e.key === "Enter" && handleSaveTemplate()}
+                autoFocus
+              />
+              <Button size="sm" onClick={handleSaveTemplate} disabled={!templateName.trim()}>שמור</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowSaveDialog(false)}>ביטול</Button>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <Button className="gap-2" onClick={handleScrape} disabled={scraping}>
+                {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                {scraping ? "מתחיל שאיבה..." : "התחל שאיבה"}
+              </Button>
+              <Button variant="outline" className="border-border" onClick={() => setShowSaveDialog(true)}>שמור כתבנית</Button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      <ScrapeProgressModal
+        open={progressModal.open}
+        batchParams={progressModal.batchParams}
+        onClose={() => setProgressModal({ open: false, batchParams: [] })}
+      />
+    </>
   );
 }
