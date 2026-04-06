@@ -53,8 +53,9 @@ Deno.serve(async (req) => {
 
     // קח רק הודעה אחת שהגיע זמנה
     const nextDue = pendingMessages.find(msg => {
-      if (!msg.scheduled_at) return true;
-      return new Date(msg.scheduled_at) <= now;
+      // בדוק זמן scheduled_at
+      if (msg.scheduled_at && new Date(msg.scheduled_at) > now) return false;
+      return true;
     });
 
     if (!nextDue) {
@@ -85,6 +86,17 @@ Deno.serve(async (req) => {
 
     if (sentToday >= campaignDailyLimit) {
       return Response.json({ ok: true, processed: 0, skipped: 1, message: `הגדנו מגבלה יומית (${sentToday}/${campaignDailyLimit})` });
+    }
+
+    // FIX 4: בדוק חלון שעות רק אם ה-scheduled_at לא הוגדר
+    // (אם הוגדר scheduled_at מפורש — כבד אותו ושלח)
+    if (!nextDue.scheduled_at) {
+      const windowStart = campaign.scheduled_time_start || "09:00";
+      const windowEnd = campaign.scheduled_time_end || "18:00";
+      const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (currentTimeStr < windowStart || currentTimeStr > windowEnd) {
+        return Response.json({ ok: true, processed: 0, skipped: 1, message: `יוצא מחלון השעות ${windowStart}–${windowEnd}` });
+      }
     }
 
     // בדוק חיבור WA
