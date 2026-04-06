@@ -32,7 +32,7 @@ const msgStatusMap = {
 };
 
 export default function LeadDetailModal({ lead, open, onClose, onStatusChange, onSave }) {
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState("property");
   const [messages, setMessages] = useState([]);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -44,7 +44,7 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
     if (!lead || !open) return;
     setNotes(lead.notes || "");
     setEditing(false);
-    setActiveTab("tasks");
+    setActiveTab("property");
     setLoadingMsgs(true);
     base44.entities.CampaignMessage.filter({ lead_id: lead.id }, "-created_date", 50)
       .then(setMessages)
@@ -139,10 +139,10 @@ export default function LeadDetailModal({ lead, open, onClose, onStatusChange, o
         {/* Tabs */}
         <div className="flex border-b border-border px-6">
           {[
-            { id: "tasks", label: "משימות" },
             { id: "property", label: "פרטי הנכס" },
-            { id: "history", label: `היסטוריה (${messages.length})` },
+            { id: "tasks", label: "משימות" },
             { id: "notes", label: "הערות" },
+            { id: "history", label: `היסטוריה (${messages.length})` },
           ].map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`py-3 px-4 text-sm font-medium border-b-2 transition-colors -mb-px ${

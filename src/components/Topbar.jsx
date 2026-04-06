@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Sparkles, Bell, Smartphone, AlertTriangle, Settings } from "lucide-react";
+import { Search, Sparkles, Bell, Smartphone, AlertTriangle, Settings, HelpCircle } from "lucide-react";
+import HelpCenter from "./HelpCenter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
@@ -20,6 +21,7 @@ export default function Topbar() {
   const [user, setUser] = useState(null);
   const [waStatus, setWaStatus] = useState(null);
   const [waPhone, setWaPhone] = useState(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -51,16 +53,18 @@ export default function Topbar() {
   const initials = user?.full_name?.split(" ").map(w => w[0]).slice(0,2).join("") || "BP";
 
   return (
+    <>
+    <HelpCenter open={showHelp} onClose={() => setShowHelp(false)} />
     <header className="h-16 min-h-16 border-b border-border bg-white/80 backdrop-blur-sm flex items-center justify-between px-8" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* Left: actions */}
       <div className="flex items-center gap-3">
-        <Link to="/scrape">
+        <Link to="/scrape" data-tour="scrape-btn">
           <Button variant="outline" size="sm" className="gap-2 h-9 px-4 text-sm font-medium border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 rounded-xl transition-all duration-200">
             <Search className="w-4 h-4" />
             שאב לידים
           </Button>
         </Link>
-        <Link to="/campaigns/new">
+        <Link to="/campaigns/new" data-tour="campaign-btn">
           <Button size="sm" className="gap-2 h-9 px-4 text-sm font-medium bg-gradient-to-l from-primary to-purple-500 hover:opacity-90 shadow-md hover:shadow-glow rounded-xl transition-all duration-200 border-0">
             <Sparkles className="w-4 h-4" />
             קמפיין חדש
@@ -81,7 +85,7 @@ export default function Topbar() {
           ) : waStatus === "disconnected" ? (
             <>
               <AlertTriangle className="w-3.5 h-3.5 text-warning" />
-              <span className="text-[11px] font-semibold text-warning">WhatsApp נתון</span>
+              <span className="text-[11px] font-semibold text-warning">WhatsApp נתוק</span>
             </>
           ) : (
             <>
@@ -94,6 +98,9 @@ export default function Topbar() {
           <p className="text-base font-bold text-foreground leading-tight">{title}</p>
           <p className="text-xs text-muted-foreground">{user ? `ברוך הבא, ${user.full_name}` : "ברוך הבא"} • {today}</p>
         </div>
+        <button onClick={() => setShowHelp(true)} title="מרכז תמיכה" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
+          <HelpCircle className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+        </button>
         <button className="relative" title="אין התראות חדשות">
           <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
         </button>
@@ -105,5 +112,6 @@ export default function Topbar() {
         </button>
       </div>
     </header>
+    </>
   );
 }

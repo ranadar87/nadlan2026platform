@@ -8,6 +8,7 @@ import LeadTable from "../components/leads/LeadTable";
 import LeadBulkActions from "../components/leads/LeadBulkActions";
 import LeadEditDialog from "../components/leads/LeadEditDialog";
 import LeadDetailModal from "../components/leads/LeadDetailModal";
+import BatchSelector from "../components/leads/BatchSelector";
 
 export default function Leads() {
   const { toast } = useToast();
@@ -17,6 +18,7 @@ export default function Leads() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [editLead, setEditLead] = useState(null);
   const [detailLead, setDetailLead] = useState(null);
+  const [selectedBatchId, setSelectedBatchId] = useState(null);
 
   const loadLeads = async () => {
     setLoading(true);
@@ -29,6 +31,7 @@ export default function Leads() {
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
+      if (selectedBatchId && lead.scrape_batch_id !== selectedBatchId) return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         const match = (lead.full_name || "").toLowerCase().includes(q) ||
@@ -43,7 +46,7 @@ export default function Leads() {
       if (filters.status && lead.status !== filters.status) return false;
       return true;
     });
-  }, [leads, filters]);
+  }, [leads, filters, selectedBatchId]);
 
   const handleDelete = async (lead) => {
     await base44.entities.Lead.delete(lead.id);
@@ -84,9 +87,12 @@ export default function Leads() {
           <h2 className="text-lg font-bold text-foreground">ניהול לידים</h2>
           <p className="text-xs text-muted-foreground">{loading ? "טוען..." : `${filteredLeads.length} לידים`}</p>
         </div>
-        <Button size="sm" className="gap-2 text-xs" onClick={() => setEditLead({})}>
-          <Plus className="w-3.5 h-3.5" />הוסף ליד ידני
-        </Button>
+        <div className="flex items-center gap-3">
+          <BatchSelector selectedBatchId={selectedBatchId} onSelect={setSelectedBatchId} />
+          <Button size="sm" className="gap-2 text-xs" onClick={() => setEditLead({})}>
+            <Plus className="w-3.5 h-3.5" />הוסף ליד ידני
+          </Button>
+        </div>
       </div>
       <LeadFilters filters={filters} onChange={setFilters} onClear={() => setFilters({})} />
       <LeadBulkActions count={selectedIds.length} onDelete={handleBulkDelete} onCampaign={() => {}} />

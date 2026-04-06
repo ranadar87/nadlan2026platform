@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
+import LiveTutorial from "../components/LiveTutorial";
 import { Home, Megaphone, Send, Eye } from "lucide-react";
 import StatCard from "../components/dashboard/StatCard";
 import RecentActivity from "../components/dashboard/RecentActivity";
@@ -9,6 +10,17 @@ import ActiveCampaignCard from "../components/dashboard/ActiveCampaignCard";
 export default function Dashboard() {
   const [stats, setStats] = useState({ totalLeads: 0, activeCampaigns: 0, sentToday: 0, openRate: 0, newThisWeek: 0 });
   const [loading, setLoading] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    const seen = localStorage.getItem("tutorial_done");
+    if (!seen) setShowTutorial(true);
+  }, []);
+
+  const handleTutorialDone = () => {
+    localStorage.setItem("tutorial_done", "1");
+    setShowTutorial(false);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -33,6 +45,8 @@ export default function Dashboard() {
   }, []);
 
   return (
+    <>
+    {showTutorial && <LiveTutorial onDone={handleTutorialDone} />}
     <div className="space-y-6 max-w-7xl animate-fade-in" style={{ fontFamily: "'Assistant', sans-serif" }}>
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
@@ -79,5 +93,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }
