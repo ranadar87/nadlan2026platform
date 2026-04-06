@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const leadIds = campaign.target_lead_ids || [];
     if (!leadIds.length) return Response.json({ error: 'אין נמענים' }, { status: 400 });
 
-    // שמור owner_user_id בקמפיין (נדרש ל-processPendingCampaigns)
+    // שמור owner_user_id בקמפיין
     if (!campaign.owner_user_id) {
       await base44.asServiceRole.entities.Campaign.update(campaignId, { owner_user_id: user.id }).catch(() => null);
     }
@@ -52,13 +52,13 @@ Deno.serve(async (req) => {
 
     if (!validLeads.length) return Response.json({ error: 'לא נמצאו לידים עם טלפון' }, { status: 400 });
 
-    // חשב זמני שליחה — הודעה ראשונה מיד, שאר עם delay מצטבר
+    // חשב זמני שליחה
     const now = new Date();
     const delayMin = (campaign.delay_min_seconds || 600);
     const delayMax = (campaign.delay_max_seconds || 900);
     const messages = [];
 
-    let cumulativeDelay = 0; // בשניות
+    let cumulativeDelay = 0;
 
     for (let i = 0; i < validLeads.length; i++) {
       const lead = validLeads[i];
@@ -67,12 +67,14 @@ Deno.serve(async (req) => {
         .replace(/\{name\}/g, cleanName(lead.full_name))
         .replace(/\{phone\}/g, normalizePhone(lead.phone));
 
-      // FIX: חשב scheduledAt לפי cumulativeDelay הנוכחי
+      // חשב את הזמן המתוזמן **קודם כל**
       const scheduledAt = new Date(now.getTime() + cumulativeDelay * 1000).toISOString();
 
-      // FIX: הוסף delay לפני החישוב של ההודעה הבאה
-      const jitter = Math.floor(Math.random() * (delayMax - delayMin)) + delayMin;
-      cumulativeDelay += jitter;
+      // אחרי חישוב scheduledAt, הוסף delay לשורה הבאה
+      if (i < validLeads.length - 1) {
+        const jitter = Math.floor(Math.random() * (delayMax - delayMin)) + delayMin;
+        cumulativeDelay += jitter;
+      }
 
       const msg = await base44.asServiceRole.entities.CampaignMessage.create({
         campaign_id: campaignId,
@@ -102,7 +104,7 @@ Deno.serve(async (req) => {
       ok: true,
       campaignId,
       queued: messages.length,
-      message: `${messages.length} הודעות תוזמנו — ה-Cron ישלח אחת כל ${delayMin}-${delayMax} שניות`,
+      message: `${messages.length} הודעות תוזמנו — Cron ישלח אחת כל ${delayMin}-${delayMax} שניות`,
     });
 
   } catch (error) {
