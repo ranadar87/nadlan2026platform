@@ -1,0 +1,136 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "payme_subscription_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 subscription \u05d1-PayMe"
+    },
+    "package_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05d7\u05d1\u05d9\u05dc\u05d4"
+    },
+    "package_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05d4\u05d7\u05d1\u05d9\u05dc\u05d4",
+      "enum": [
+        "\u05e1\u05d5\u05dc\u05d5",
+        "\u05e4\u05e8\u05d5",
+        "\u05e1\u05d5\u05db\u05e0\u05d5\u05ea"
+      ]
+    },
+    "price": {
+      "type": "number",
+      "title": "\u05de\u05d7\u05d9\u05e8 \u05d7\u05d5\u05d3\u05e9\u05d9 (\u20aa)"
+    },
+    "status": {
+      "type": "string",
+      "title": "\u05e1\u05d8\u05d8\u05d5\u05e1",
+      "enum": [
+        "initial",
+        "trial",
+        "active",
+        "paused",
+        "canceled",
+        "failed"
+      ],
+      "default": "initial"
+    },
+    "trial_days_remaining": {
+      "type": "number",
+      "title": "\u05d9\u05de\u05d9 trial \u05e9\u05e0\u05d5\u05ea\u05e8\u05d5"
+    },
+    "trial_ends_at": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05e1\u05d5\u05e3 \u05d4-trial"
+    },
+    "billing_cycle": {
+      "type": "string",
+      "title": "\u05de\u05d7\u05d6\u05d5\u05e8 \u05d7\u05d9\u05d5\u05d1",
+      "enum": [
+        "monthly",
+        "yearly"
+      ],
+      "default": "monthly"
+    },
+    "next_billing_date": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05d7\u05d9\u05d5\u05d1 \u05d4\u05d1\u05d0"
+    },
+    "buyer_key": {
+      "type": "string",
+      "title": "PayMe buyer token (\u05dc\u05d7\u05d9\u05d5\u05d1 \u05d7\u05d5\u05d6\u05e8)"
+    },
+    "payme_customer_id": {
+      "type": "string",
+      "title": "\u05de\u05d6\u05d4\u05d4 \u05dc\u05e7\u05d5\u05d7 \u05d1-PayMe"
+    },
+    "customer_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05d4\u05dc\u05e7\u05d5\u05d7"
+    },
+    "customer_email": {
+      "type": "string",
+      "title": "\u05d3\u05d5\u05d0\u05f4\u05dc \u05d4\u05dc\u05e7\u05d5\u05d7"
+    },
+    "customer_phone": {
+      "type": "string",
+      "title": "\u05d8\u05dc\u05e4\u05d5\u05df \u05d4\u05dc\u05e7\u05d5\u05d7"
+    },
+    "invoice_name": {
+      "type": "string",
+      "title": "\u05e9\u05dd \u05dc\u05d7\u05e9\u05d1\u05d5\u05e0\u05d9\u05ea"
+    },
+    "invoice_details": {
+      "type": "object",
+      "title": "\u05e4\u05e8\u05d8\u05d9 \u05d7\u05e9\u05d1\u05d5\u05e0\u05d9\u05ea",
+      "additionalProperties": true
+    },
+    "coupon_code": {
+      "type": "string",
+      "title": "\u05e7\u05d5\u05d3 \u05e7\u05d5\u05e4\u05d5\u05df (\u05d0\u05dd \u05d4\u05d5\u05d7\u05dc)"
+    },
+    "discount_percent": {
+      "type": "number",
+      "title": "\u05d0\u05d7\u05d5\u05d6 \u05d4\u05e0\u05d7\u05d4"
+    },
+    "final_price": {
+      "type": "number",
+      "title": "\u05de\u05d7\u05d9\u05e8 \u05e1\u05d5\u05e4\u05d9 \u05dc\u05d0\u05d7\u05e8 \u05d4\u05e0\u05d7\u05d5\u05ea"
+    },
+    "started_at": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05ea\u05d7\u05dc\u05ea \u05d4-subscription"
+    },
+    "canceled_at": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d1\u05d9\u05d8\u05d5\u05dc"
+    },
+    "cancellation_reason": {
+      "type": "string",
+      "title": "\u05e1\u05d9\u05d1\u05ea \u05d4\u05d1\u05d9\u05d8\u05d5\u05dc"
+    },
+    "last_payment_at": {
+      "type": "string",
+      "title": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05d4\u05d0\u05d7\u05e8\u05d5\u05df"
+    },
+    "failed_attempts": {
+      "type": "number",
+      "title": "\u05de\u05e1\u05e4\u05e8 \u05e0\u05d9\u05e1\u05d9\u05d5\u05e0\u05d5\u05ea \u05ea\u05e9\u05dc\u05d5\u05dd \u05db\u05d5\u05e9\u05dc\u05d9\u05dd",
+      "default": 0
+    },
+    "notes": {
+      "type": "string",
+      "title": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05e4\u05e0\u05d9\u05de\u05d9\u05d5\u05ea"
+    }
+  },
+  "required": [
+    "user_id",
+    "package_id",
+    "status"
+  ]
+}
