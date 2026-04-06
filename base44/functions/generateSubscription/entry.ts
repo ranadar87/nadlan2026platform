@@ -10,37 +10,53 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { packageId, packageName, price, trialDays, billingCycle, customerName, customerEmail, customerPhone, invoiceName, invoiceDetails, couponCode, discountPercent } = body;
+    const { plan_key, billing_cycle, customerName, customerEmail, customerPhone, invoiceName, invoiceDetails, couponCode, discountPercent } = body;
 
-    if (!packageId || !packageName || !price) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!plan_key) {
+      return Response.json({ error: 'plan_key required' }, { status: 400 });
     }
+
+    // קרא את פרטי החבילה מה-PaymentPlan
+    const plans = await base44.asServiceRole.entities.PaymentPlan.filter({ plan_key });
+    if (!plans.length) {
+      return Response.json({ error: 'Plan not found' }, { status: 404 });
+    }
+    const plan = plans[0];
+
+    // קרא את ההגדרות הגלובליות מ-PaymeConfig
+    const configs = await base44.asServiceRole.entities.PaymeConfig.filter({ config_key: 'global' });
+    const config = configs.length > 0 ? configs[0] : {};
+
+    const actualBillingCycle = billing_cycle || 'monthly';
+    const price = actualBillingCycle === 'yearly' ? plan.price_yearly : plan.price_monthly;
+    const trialDays = plan.trial_days || 14;
 
     const paymeKey = Deno.env.get('PAYME_SELLER_ID');
     if (!paymeKey) {
       return Response.json({ error: 'PayMe configuration missing' }, { status: 500 });
     }
 
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + (trialDays || 14));
+const trialEndsAt = new Date();
+    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
     const nextBillingDate = new Date(trialEndsAt);
-    if (billingCycle === 'yearly') {
+    if (actualBillingCycle === 'yearly') {
       nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
     } else {
       nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
     }
 
-    // יצור subscription ב-base44
+// יצור subscription ב-base44
+    const finalPrice = price * (1 - (discountPercent || 0) / 100);
     const subscription = await base44.asServiceRole.entities.Subscription.create({
       user_id: user.id,
-      package_id: packageId,
-      package_name: packageName,
+      package_id: plan.id,
+      package_name: plan.plan_name,
       price,
       status: 'initial',
-      trial_days_remaining: trialDays || 14,
+      trial_days_remaining: trialDays,
       trial_ends_at: trialEndsAt.toISOString(),
-      billing_cycle: billingCycle || 'monthly',
+      billing_cycle: actualBillingCycle,
       next_billing_date: nextBillingDate.toISOString(),
       customer_name: customerName || user.full_name,
       customer_email: customerEmail || user.email,
@@ -49,11 +65,10 @@ Deno.serve(async (req) => {
       invoice_details: invoiceDetails || {},
       coupon_code: couponCode,
       discount_percent: discountPercent || 0,
-      final_price: price * (1 - (discountPercent || 0) / 100),
+      final_price: finalPrice,
       started_at: new Date().toISOString(),
     });
 
-    // Response עם פרטי ה-subscription
     return Response.json({
       ok: true,
       subscription,
