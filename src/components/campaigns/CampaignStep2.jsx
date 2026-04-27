@@ -20,6 +20,11 @@ export default function CampaignStep2({ campaign, update }) {
 
   const variations = campaign.message_variations || [];
 
+  const addVariation = () => {
+    if (variations.length >= MAX_VARIATIONS) return;
+    update("message_variations", [...variations, { label: `וריאציה ${String.fromCharCode(65 + variations.length)}`, content: "" }]);
+  };
+
   const generateVariations = async () => {
     if (!campaign.ai_prompt) return;
     setGenerating(true);
